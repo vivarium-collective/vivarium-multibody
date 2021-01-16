@@ -1,4 +1,4 @@
-# Template Vivarium Project
+# Pymunk Vivarium Project
 
 Visit [the Vivarium Core
 documentation](https://vivarium-core.readthedocs.io/) to learn how to
@@ -16,7 +16,7 @@ and select `use this template`.
 What follows is a template `README.md`.
 
 <!--
-TODO: Rename the `template` folder to something that makes sense for
+TODO: Rename the `vivarium_pymunk` folder to something that makes sense for
 your project.
 -->
 
