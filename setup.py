@@ -11,9 +11,9 @@ setup(
     version='0.0.1',
     packages=[
         'vivarium_pymunk',
+        'vivarium_pymunk.plots',
         'vivarium_pymunk.processes',
         'vivarium_pymunk.composites',
-        'vivarium_pymunk.experiments',
     ],
     author='Eran Agmon',
     author_email='eagmon@stanford.edu',

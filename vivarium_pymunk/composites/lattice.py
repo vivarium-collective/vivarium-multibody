@@ -4,7 +4,7 @@ import os
 from vivarium.core.process import Composite
 from vivarium.core.composition import (
     compartment_in_experiment,
-    COMPARTMENT_OUT_DIR,
+    COMPOSITE_OUT_DIR,
 )
 from vivarium.library.dict_utils import deep_merge
 
@@ -185,7 +185,7 @@ def test_lattice(
 
 
 def main():
-    out_dir = os.path.join(COMPARTMENT_OUT_DIR, NAME)
+    out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
