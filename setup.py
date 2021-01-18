@@ -12,6 +12,7 @@ setup(
     packages=[
         'vivarium_pymunk',
         'vivarium_pymunk.plots',
+        'vivarium_pymunk.library',
         'vivarium_pymunk.processes',
         'vivarium_pymunk.composites',
     ],
