@@ -127,7 +127,6 @@ class Multibody(Process):
         'velocity_unit': DEFAULT_VELOCITY_UNIT,
         'mother_machine': False,
         'animate': False,
-        'time_step': 2,
     }
 
     def __init__(self, parameters=None):

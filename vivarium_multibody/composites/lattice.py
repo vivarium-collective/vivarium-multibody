@@ -9,6 +9,7 @@ from vivarium.core.composition import (
     FACTORY_KEY
 )
 from vivarium.library.dict_utils import deep_merge
+from vivarium.library.units import units
 
 # processes
 from vivarium_multibody.processes.multibody_physics import (
@@ -24,6 +25,7 @@ from vivarium_multibody.composites.grow_divide import GrowDivide
 
 
 # plots
+from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium_multibody.plots.snapshots import plot_snapshots
 
 
@@ -109,7 +111,6 @@ class Lattice(Composite):
             'diffusion': 1e-2,
         },
         'colony_shape_deriver': None,
-        '_schema': {},
     }
 
     def __init__(self, config=None):
@@ -189,7 +190,11 @@ def test_lattice(
                         'growth': {
                             'growth_rate': 0.006,  # very fast growth
                             'default_growth_noise': 1e-3,
-                        }
+                        },
+                        'divide_condition': {
+                            'threshold': 4000 * units.fg
+                        },
+                        '_schema': {}
                     }}
             } for agent_id in agent_ids
         }}
@@ -198,7 +203,7 @@ def test_lattice(
     initial_state = {
         'agents': {
             agent_id: {
-                'internal': {'mass': 1000}
+                'global': {'mass': 1000 * units.fg}
             } for agent_id in agent_ids
         }}
     experiment_settings = {
@@ -210,10 +215,9 @@ def test_lattice(
 
     # run the simulation
     spatial_experiment.update(total_time)
-    data = spatial_experiment.emitter.get_data()
+    data = spatial_experiment.emitter.get_data_unitless()
 
-    # assert that the agent remains in the simulation until the end
-    # assert len(data[total_time]['agents']) == n_agents
+    # TODO -- add asserts
 
     return data
 
@@ -231,6 +235,9 @@ def main():
         config=config,
         n_agents=1,
         total_time=8000)
+
+    plot_settings = {}
+    plot_agents_multigen(data, plot_settings, out_dir)
 
     make_snapshots_plot(data, bounds, out_dir)
 

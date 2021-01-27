@@ -12,7 +12,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium.processes.growth_rate import GrowthRate
 from vivarium.processes.divide_condition import DivideCondition
 from vivarium.processes.meta_division import MetaDivision
-
+from vivarium_multibody.processes.derive_globals import DeriveGlobals
 
 NAME = 'grow_divide'
 
@@ -25,17 +25,17 @@ class GrowDivide(Composite):
             'variables': ['mass'],
         },
         'divide_condition': {
-            'threshold': 2000.0},
+            'threshold': 2000.0 * units.fg},
         'boundary_path': ('boundary',),
         'agents_path': ('..', '..', 'agents',),
         'daughter_path': tuple(),
         '_schema': {
-            'growth': {'variables': {'mass': {'_divider': 'split'}}}
-        }
-    }
-
-    def __init__(self, config):
-        super(GrowDivide, self).__init__(config)
+            'growth': {
+                'variables': {
+                    'mass': {
+                        '_default': 1000.0 * units.fg,
+                        '_divider': 'split',
+                    }}}}}
 
     def generate_processes(self, config):
         # division config
@@ -49,6 +49,7 @@ class GrowDivide(Composite):
 
         return {
             'growth': GrowthRate(config['growth']),
+            'globals_deriver': DeriveGlobals(),
             'divide_condition': DivideCondition(config['divide_condition']),
             'division': MetaDivision(division_config)}
 
@@ -57,11 +58,14 @@ class GrowDivide(Composite):
         agents_path = config['agents_path']
         return {
             'growth': {
-                'variables': ('internal',),
+                'variables': ('global',),
                 'rates': ('rates',),
             },
+            'globals_deriver': {
+                'global': ('global',)
+            },
             'divide_condition': {
-                'variable': ('internal', 'mass',),
+                'variable': ('global', 'mass',),
                 'divide': boundary_path + ('divide',)
             },
             'division': {
@@ -72,7 +76,7 @@ class GrowDivide(Composite):
 
 
 
-def test_grow_divide(total_time = 2000):
+def test_grow_divide(total_time=2000):
 
     agent_id = '0'
     composite = GrowDivide({
@@ -86,8 +90,8 @@ def test_grow_divide(total_time = 2000):
     initial_state = {
         'agents': {
             agent_id: {
-                'internal': {
-                    'mass': 1000}
+                'global': {
+                    'mass': 1000 * units.fg}
             }}}
 
     settings = {
@@ -99,7 +103,7 @@ def test_grow_divide(total_time = 2000):
         settings=settings)
 
     experiment.update(total_time)
-    output = experiment.emitter.get_data()
+    output = experiment.emitter.get_data_unitless()
 
     # assert
     # external starts at 1, goes down until death, and then back up
@@ -117,7 +121,7 @@ def main():
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    output = test_grow_divide(8000)
+    output = test_grow_divide(6000)
 
     plot_settings = {}
     plot_agents_multigen(output, plot_settings, out_dir)
