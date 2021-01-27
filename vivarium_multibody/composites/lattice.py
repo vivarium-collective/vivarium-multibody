@@ -3,8 +3,10 @@ import os
 
 from vivarium.core.process import Composite
 from vivarium.core.composition import (
+    compose_experiment,
     compartment_in_experiment,
     COMPOSITE_OUT_DIR,
+    FACTORY_KEY
 )
 from vivarium.library.dict_utils import deep_merge
 
@@ -18,6 +20,8 @@ from vivarium_multibody.processes.diffusion_field import (
     get_gaussian_config,
 )
 from vivarium_multibody.processes.derive_colony_shape import ColonyShapeDeriver
+from vivarium_multibody.composites.grow_divide import GrowDivide
+
 
 # plots
 from vivarium_multibody.plots.snapshots import plot_snapshots
@@ -144,43 +148,73 @@ class Lattice(Composite):
         }
 
 
+def make_snapshots_plot(data, bounds, out_dir=None):
+    # make snapshot plot
+    agents = {time: time_data['agents'] for time, time_data in data.items()}
+    fields = {time: time_data['fields'] for time, time_data in data.items()}
+    plot_data = {
+        'agents': agents,
+        'fields': fields,
+        'config': {'bounds': bounds}}
+
+    plot_config = {}
+    if out_dir:
+        plot_config = {
+            'out_dir': out_dir,
+            'filename': 'snapshots'}
+    return plot_snapshots(plot_data, plot_config)
+
+
 def test_lattice(
         config=None,
         n_agents=1,
-        end_time=10
+        total_time=1000
 ):
-    if config is None:
-        config = make_lattice_config()
     # configure the compartment
-    compartment = Lattice(config)
+    lattice_config = config or make_lattice_config()
+    # lattice_composite = Lattice(config)
 
-    # set initial agent state
-    if n_agents:
-        agent_ids = [str(agent_id) for agent_id in range(n_agents)]
-        body_config = {'agent_ids': agent_ids}
-        if 'multibody' in config and 'bounds' in config['multibody']:
-            body_config.update({'bounds': config['multibody']['bounds']})
-        initial_agents_state = agent_body_config(body_config)
-        initial_state = {'agents': initial_agents_state}
+    # declare the hierarchy
+    agent_ids = [str(agent_id) for agent_id in range(n_agents)]
+    hierarchy = {
+        FACTORY_KEY: {
+            'type': Lattice,
+            'config': lattice_config},
+        'agents': {
+            agent_id: {
+                FACTORY_KEY: {
+                    'type': GrowDivide,
+                    'config': {
+                        'agent_id': agent_id,
+                        'growth': {
+                            'growth_rate': 0.006,  # very fast growth
+                            'default_growth_noise': 1e-3,
+                        }
+                    }}
+            } for agent_id in agent_ids
+        }}
 
-    # configure experiment
+    # configure experiment with helper function compose_experiment()
+    initial_state = {
+        'agents': {
+            agent_id: {
+                'internal': {'mass': 1000}
+            } for agent_id in agent_ids
+        }}
     experiment_settings = {
-        'compartment': config,
-        'initial_state': initial_state}
-    experiment = compartment_in_experiment(
-        compartment,
-        experiment_settings)
+        'initial_state': initial_state,
+        'experiment_id': 'spatial_environment'}
+    spatial_experiment = compose_experiment(
+        hierarchy=hierarchy,
+        settings=experiment_settings)
 
-    # run experiment
-    timestep = 1
-    time = 0
-    while time < end_time:
-        experiment.update(timestep)
-        time += timestep
-    data = experiment.emitter.get_data()
+    # run the simulation
+    spatial_experiment.update(total_time)
+    data = spatial_experiment.emitter.get_data()
 
     # assert that the agent remains in the simulation until the end
-    assert len(data[end_time]['agents']) == n_agents
+    # assert len(data[total_time]['agents']) == n_agents
+
     return data
 
 
@@ -196,19 +230,9 @@ def main():
     data = test_lattice(
         config=config,
         n_agents=1,
-        end_time=40)
+        total_time=8000)
 
-    # make snapshot plot
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-    plot_data = {
-        'agents': agents,
-        'fields': fields,
-        'config': {'bounds': bounds}}
-    plot_config = {
-        'out_dir': out_dir,
-        'filename': 'snapshots'}
-    plot_snapshots(plot_data, plot_config)
+    make_snapshots_plot(data, bounds, out_dir)
 
 
 if __name__ == '__main__':
