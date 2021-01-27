@@ -7,12 +7,12 @@ from vivarium.core.composition import (
 )
 
 # processes
-from vivarium_pymunk.processes.multibody_physics import (
+from vivarium_multibody.processes.multibody_physics import (
     Multibody,
     agent_body_config,
 )
-from vivarium_pymunk.plots.snapshots import plot_snapshots
-from vivarium_pymunk.processes.static_field import StaticField
+from vivarium_multibody.plots.snapshots import plot_snapshots
+from vivarium_multibody.processes.static_field import StaticField
 
 NAME = 'static_lattice'
 

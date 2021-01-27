@@ -19,12 +19,12 @@ from vivarium.core.composition import (
 )
 from vivarium.library.units import units
 
-from vivarium_pymunk.library.lattice_utils import (
+from vivarium_multibody.library.lattice_utils import (
     count_to_concentration,
     get_bin_site,
     get_bin_volume,
 )
-from vivarium_pymunk.plots.snapshots import plot_snapshots
+from vivarium_multibody.plots.snapshots import plot_snapshots
 
 NAME = 'diffusion_field'
 

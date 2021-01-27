@@ -1,4 +1,4 @@
-# Modified from GitHub Actions vivarium_pymunk
+# Modified from GitHub Actions vivarium_multibody
 
 name: Pytest
 

@@ -9,18 +9,18 @@ from vivarium.core.composition import (
 from vivarium.library.dict_utils import deep_merge
 
 # processes
-from vivarium_pymunk.processes.multibody_physics import (
+from vivarium_multibody.processes.multibody_physics import (
     Multibody,
     agent_body_config,
 )
-from vivarium_pymunk.processes.diffusion_field import (
+from vivarium_multibody.processes.diffusion_field import (
     DiffusionField,
     get_gaussian_config,
 )
-from vivarium_pymunk.processes.derive_colony_shape import ColonyShapeDeriver
+from vivarium_multibody.processes.derive_colony_shape import ColonyShapeDeriver
 
 # plots
-from vivarium_pymunk.plots.snapshots import plot_snapshots
+from vivarium_multibody.plots.snapshots import plot_snapshots
 
 
 NAME = 'lattice'

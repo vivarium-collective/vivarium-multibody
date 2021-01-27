@@ -13,8 +13,8 @@ from vivarium.core.composition import (
     PROCESS_OUT_DIR
 )
 
-from vivarium_pymunk.processes.diffusion_field import plot_fields
-from vivarium_pymunk.plots.snapshots import plot_snapshots
+from vivarium_multibody.processes.diffusion_field import plot_fields
+from vivarium_multibody.plots.snapshots import plot_snapshots
 
 
 NAME = 'static_field'

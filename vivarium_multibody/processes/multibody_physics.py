@@ -28,9 +28,9 @@ from vivarium.core.composition import (
 )
 
 # vivarium-cell imports
-from vivarium_pymunk.processes.derive_globals import volume_from_length
-from vivarium_pymunk.library.pymunk_multibody import PymunkMultibody
-from vivarium_pymunk.plots.snapshots import (
+from vivarium_multibody.processes.derive_globals import volume_from_length
+from vivarium_multibody.library.pymunk_multibody import PymunkMultibody
+from vivarium_multibody.plots.snapshots import (
     plot_snapshots,
     plot_temporal_trajectory,
 )

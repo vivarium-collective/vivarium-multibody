@@ -7,14 +7,14 @@ with open("README.md", 'r') as readme:
     long_description = readme.read()
 
 setup(
-    name='vivarium-pymunk',
-    version='0.0.2',
+    name='vivarium-multibody',
+    version='0.0.1',
     packages=[
-        'vivarium_pymunk',
-        'vivarium_pymunk.plots',
-        'vivarium_pymunk.library',
-        'vivarium_pymunk.processes',
-        'vivarium_pymunk.composites',
+        'vivarium_multibody',
+        'vivarium_multibody.plots',
+        'vivarium_multibody.library',
+        'vivarium_multibody.processes',
+        'vivarium_multibody.composites',
     ],
     author='Eran Agmon',
     author_email='eagmon@stanford.edu',
