@@ -58,14 +58,14 @@ class GrowDivide(Composite):
         agents_path = config['agents_path']
         return {
             'growth': {
-                'variables': ('global',),
+                'variables': boundary_path,
                 'rates': ('rates',),
             },
             'globals_deriver': {
-                'global': ('global',)
+                'global': boundary_path
             },
             'divide_condition': {
-                'variable': ('global', 'mass',),
+                'variable': boundary_path + ('mass',),
                 'divide': boundary_path + ('divide',)
             },
             'division': {

@@ -125,6 +125,7 @@ class Multibody(Process):
         'length_unit': DEFAULT_LENGTH_UNIT,
         'mass_unit': DEFAULT_MASS_UNIT,
         'velocity_unit': DEFAULT_VELOCITY_UNIT,
+        'boundary_key': 'boundary',
         'mother_machine': False,
         'animate': False,
     }
@@ -164,7 +165,7 @@ class Multibody(Process):
     def ports_schema(self):
         glob_schema = {
             '*': {
-                'boundary': {
+                self.parameters['boundary_key']: {
                     'location': {
                         '_emit': True,
                         '_default': [0.5 * bound for bound in self.bounds],
@@ -176,21 +177,17 @@ class Multibody(Process):
                                 'angle': ('angle',)}}},
                     'length': {
                         '_emit': True,
-                        '_default': 2.0,
-                        '_divider': 'split',  # TODO -- might want this to be set by agent
-                        '_updater': 'set'},
+                        '_default': 2.0},
                     'width': {
                         '_emit': True,
-                        '_default': 1.0,
-                        '_updater': 'set'},
+                        '_default': 1.0},
                     'angle': {
                         '_emit': True,
                         '_default': 0.0,
                         '_updater': 'set'},
                     'mass': {
                         '_emit': True,
-                        '_default': 1339 * units.fg,
-                        '_updater': 'set'},
+                        '_default': 1339 * units.fg},
                     'thrust': {
                         '_default': 0.0,
                         '_updater': 'set'},

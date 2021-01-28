@@ -29,7 +29,7 @@ from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium_multibody.plots.snapshots import plot_snapshots
 
 
-NAME = 'lattice'
+NAME = 'lattice_environment'
 
 
 # make a configuration dictionary for the Lattice compartment
@@ -95,7 +95,7 @@ class Lattice(Composite):
     Lattice:  A two-dimensional lattice environmental model with multibody physics and diffusing molecular fields.
     """
 
-    name = 'lattice_environment'
+    name = NAME
     defaults = {
         # To exclude a process, from the compartment, set its
         # configuration dictionary to None, e.g. colony_mass_deriver
@@ -112,9 +112,6 @@ class Lattice(Composite):
         },
         'colony_shape_deriver': None,
     }
-
-    def __init__(self, config=None):
-        super(Lattice, self).__init__(config)
 
     def generate_processes(self, config):
         processes = {
@@ -192,7 +189,7 @@ def test_lattice(
                             'default_growth_noise': 1e-3,
                         },
                         'divide_condition': {
-                            'threshold': 4000 * units.fg
+                            'threshold': 3000 * units.fg
                         },
                         '_schema': {}
                     }}
@@ -203,7 +200,7 @@ def test_lattice(
     initial_state = {
         'agents': {
             agent_id: {
-                'global': {'mass': 1000 * units.fg}
+                'boundary': {'mass': 1500 * units.fg}
             } for agent_id in agent_ids
         }}
     experiment_settings = {
@@ -216,16 +213,14 @@ def test_lattice(
     # run the simulation
     spatial_experiment.update(total_time)
     data = spatial_experiment.emitter.get_data_unitless()
-
-    # TODO -- add asserts
+    # timeseries = spatial_experiment.emitter.get_timeseries()
 
     return data
 
 
 def main():
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
+    os.makedirs(out_dir, exist_ok=True)
 
     bounds = [25, 25]
     config = make_lattice_config(
@@ -234,7 +229,7 @@ def main():
     data = test_lattice(
         config=config,
         n_agents=1,
-        total_time=8000)
+        total_time=12000)
 
     plot_settings = {}
     plot_agents_multigen(data, plot_settings, out_dir)
