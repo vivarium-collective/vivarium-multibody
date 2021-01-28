@@ -236,6 +236,23 @@ def get_phylogeny_colors_from_names(agent_ids):
     return agent_colors
 
 
+def make_snapshots_plot(data, bounds, out_dir=None):
+    # make snapshot plot
+    agents = {time: time_data['agents'] for time, time_data in data.items()}
+    fields = {time: time_data['fields'] for time, time_data in data.items()}
+    plot_data = {
+        'agents': agents,
+        'fields': fields,
+        'config': {'bounds': bounds}}
+
+    plot_config = {}
+    if out_dir:
+        plot_config = {
+            'out_dir': out_dir,
+            'filename': 'snapshots'}
+    return plot_snapshots(plot_data, plot_config)
+
+
 def plot_snapshots(data, plot_config):
     '''Plot snapshots of the simulation over time
 
@@ -421,6 +438,8 @@ def plot_snapshots(data, plot_config):
         fig.subplots_adjust(wspace=0.7, hspace=0.1)
         fig.savefig(fig_path, bbox_inches='tight')
         plt.close(fig)
+    else:
+        return fig
 
 
 def plot_tags(data, plot_config):
@@ -612,6 +631,8 @@ def plot_tags(data, plot_config):
         fig.subplots_adjust(wspace=0.7, hspace=0.1)
         fig.savefig(fig_path, bbox_inches='tight')
         plt.close(fig)
+    else:
+        return fig
 
 def initialize_spatial_figure(bounds, fontsize=18):
 

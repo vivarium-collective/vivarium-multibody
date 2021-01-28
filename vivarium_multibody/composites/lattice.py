@@ -1,10 +1,8 @@
-import copy
 import os
 
 from vivarium.core.process import Composite
 from vivarium.core.composition import (
     compose_experiment,
-    compartment_in_experiment,
     COMPOSITE_OUT_DIR,
     FACTORY_KEY
 )
@@ -14,11 +12,9 @@ from vivarium.library.units import units
 # processes
 from vivarium_multibody.processes.multibody_physics import (
     Multibody,
-    agent_body_config,
 )
 from vivarium_multibody.processes.diffusion_field import (
     DiffusionField,
-    get_gaussian_config,
 )
 from vivarium_multibody.processes.derive_colony_shape import ColonyShapeDeriver
 from vivarium_multibody.composites.grow_divide import GrowDivide
@@ -26,8 +22,7 @@ from vivarium_multibody.composites.grow_divide import GrowDivide
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
-from vivarium_multibody.plots.snapshots import plot_snapshots
-
+from vivarium_multibody.plots.snapshots import make_snapshots_plot
 
 NAME = 'lattice_environment'
 
@@ -144,23 +139,6 @@ class Lattice(Composite):
             for process, process_topology in topology.items()
             if config[process] is not None
         }
-
-
-def make_snapshots_plot(data, bounds, out_dir=None):
-    # make snapshot plot
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-    plot_data = {
-        'agents': agents,
-        'fields': fields,
-        'config': {'bounds': bounds}}
-
-    plot_config = {}
-    if out_dir:
-        plot_config = {
-            'out_dir': out_dir,
-            'filename': 'snapshots'}
-    return plot_snapshots(plot_data, plot_config)
 
 
 def test_lattice(
