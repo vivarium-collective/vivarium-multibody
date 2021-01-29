@@ -495,7 +495,7 @@ def run_growth_division(
         experiment_settings=experiment_settings)
 
     agents, fields = format_snapshot_data(gd_data)
-    plot_snapshots(
+    return plot_snapshots(
         bounds, agents=agents, fields=fields, out_dir=out_dir)
 
 

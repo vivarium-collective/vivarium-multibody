@@ -346,7 +346,7 @@ def plot_snapshots(
     # get agent ids
     agent_colors = get_agent_colors(agents, phylogeny_names)
 
-    make_snapshots_figure(
+    return make_snapshots_figure(
         agents=agents,
         agent_colors=agent_colors,
         fields=fields,
@@ -467,8 +467,7 @@ def make_snapshots_figure(
         fig.subplots_adjust(wspace=0.7, hspace=0.1)
         fig.savefig(fig_path, bbox_inches='tight')
         plt.close(fig)
-    else:
-        return fig
+    return fig
 
 
 def plot_tags(data, plot_config):
