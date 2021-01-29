@@ -193,8 +193,6 @@ def test_lattice(
     # run the simulation
     spatial_experiment.update(total_time)
     data = spatial_experiment.emitter.get_data_unitless()
-    # timeseries = spatial_experiment.emitter.get_timeseries()
-
     return data
 
 

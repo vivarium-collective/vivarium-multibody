@@ -240,8 +240,8 @@ def format_snapshot_data(data):
     agents = {}
     fields = {}
     for time, time_data in data.items():
-        agents[time] = time_data['agents']
-        fields[time] = time_data['fields']
+        agents[time] = time_data.get('agents', {})
+        fields[time] = time_data.get('fields', {})
     return agents, fields
 
 
@@ -346,7 +346,7 @@ def plot_snapshots(
     # get agent ids
     agent_colors = get_agent_colors(agents, phylogeny_names)
 
-    make_snapshots_figure(
+    return make_snapshots_figure(
         agents=agents,
         agent_colors=agent_colors,
         fields=fields,
@@ -355,6 +355,7 @@ def plot_snapshots(
         time_indices=time_indices,
         snapshot_times=snapshot_times,
         bounds=bounds,
+        out_dir=out_dir,
     )
 
 # def make_single_snapshot():
@@ -372,7 +373,7 @@ def make_snapshots_figure(
     default_font_size=36,
     field_label_size=20,
     agent_shape='segment',
-    out_dir=False,
+    out_dir=None,
     filename='snapshots',
 ):
     '''
@@ -466,8 +467,7 @@ def make_snapshots_figure(
         fig.subplots_adjust(wspace=0.7, hspace=0.1)
         fig.savefig(fig_path, bbox_inches='tight')
         plt.close(fig)
-    else:
-        return fig
+    return fig
 
 
 def plot_tags(data, plot_config):
@@ -900,12 +900,12 @@ def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='
 
 def init_axes(
     fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time,
-    molecule, ylabel_size=20
+    molecule, ylabel_size=20, title_size=12,
 ):
     ax = fig.add_subplot(grid[row_idx, col_idx])
     if row_idx == 0:
         plot_title = 'time: {:.4f} s'.format(float(time))
-        plt.title(plot_title, y=1.08)
+        plt.title(plot_title, y=1.08, fontsize=title_size)
     if col_idx == 0:
         ax.set_ylabel(
             molecule, fontsize=ylabel_size, rotation='horizontal',
