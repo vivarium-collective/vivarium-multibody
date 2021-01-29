@@ -236,24 +236,62 @@ def get_phylogeny_colors_from_names(agent_ids):
     return agent_colors
 
 
-def make_snapshots_plot(data, bounds, out_dir=None):
-    # make snapshot plot
-    agents = {time: time_data['agents'] for time, time_data in data.items()}
-    fields = {time: time_data['fields'] for time, time_data in data.items()}
-    plot_data = {
-        'agents': agents,
-        'fields': fields,
-        'config': {'bounds': bounds}}
-
-    plot_config = {}
-    if out_dir:
-        plot_config = {
-            'out_dir': out_dir,
-            'filename': 'snapshots'}
-    return plot_snapshots(plot_data, plot_config)
+def format_snapshot_data(data):
+    agents = {}
+    fields = {}
+    for time, time_data in data.items():
+        agents[time] = time_data['agents']
+        fields[time] = time_data['fields']
+    return agents, fields
 
 
-def plot_snapshots(data, plot_config):
+
+def get_field_range(fields, include_fields, time_vec, skip_fields):
+    field_range = {}
+    if fields:
+        if include_fields is None:
+            field_ids = set(fields[time_vec[0]].keys())
+        else:
+            field_ids = set(include_fields)
+
+        field_ids -= set(skip_fields)
+        for field_id in field_ids:
+            field_min = min([min(min(field_data[field_id])) for t, field_data in fields.items()])
+            field_max = max([max(max(field_data[field_id])) for t, field_data in fields.items()])
+            field_range[field_id] = [field_min, field_max]
+    return field_range
+
+
+def get_agent_colors(agents, phylogeny_names=None):
+    agent_ids = set()
+    if agents:
+        for time, time_data in agents.items():
+            current_agents = list(time_data.keys())
+            agent_ids.update(current_agents)
+        agent_ids = list(agent_ids)
+
+        # set agent colors
+        if phylogeny_names:
+            agent_colors = get_phylogeny_colors_from_names(agent_ids)
+        else:
+            agent_colors = {}
+            for agent_id in agent_ids:
+                hue = random.choice(HUES)  # select random initial hue
+                color = [hue] + DEFAULT_SV
+                agent_colors[agent_id] = color
+    return agent_colors
+
+
+def plot_snapshots(
+        bounds,
+        agents={},
+        fields={},
+        n_snapshots=6,
+        phylogeny_names=True,
+        skip_fields=[],
+        include_fields=None,
+        out_dir=None,
+):
     '''Plot snapshots of the simulation over time
 
     The snapshots depict the agents and environmental molecule
@@ -271,58 +309,22 @@ def plot_snapshots(data, plot_config):
               timepoint.  Field data dictionaries should have the same
               form as the hierarchy tree rooted at ``fields``.
             * **config** (:py:class:`dict`): The environmental
-              configuration dictionary  with the following keys:
-
-                * **bounds** (:py:class:`tuple`): The dimensions of the
-                  environment.
+              configuration dictionary which is passed to
 
         plot_config (dict): Accepts the following configuration options.
             Any options with a default is optional.
 
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
-            * **agent_shape** (:py:class:`str`): the shape of the agents.
-              select from **rectangle**, **segment**
             * **phylogeny_names** (:py:class:`bool`): This selects agent
               colors based on phylogenies seved in their names using
               meta_division.py daughter_phylogeny_id()
-            * **out_dir** (:py:class:`str`): Output directory, which is
-              ``out`` by default.
-            * **filename** (:py:class:`str`): Base name of output file.
-              ``snapshots`` by default.
             * **skip_fields** (:py:class:`Iterable`): Keys of fields to
               exclude from the plot. This takes priority over
               ``include_fields``.
             * **include_fields** (:py:class:`Iterable`): Keys of fields
               to plot.
-            * **field_label_size** (:py:class:`float`): Font size of the
-              field label.
-            * **dead_color** (:py:class:`list` of 3 :py:class:`float`s):
-              Color for dead cells in HSV. Defaults to [0, 0, 0], which
-              is black.
-            * **default_font_size** (:py:class:`float`): Font size for
-              titles and axis labels.
     '''
-    check_plt_backend()
-
-    n_snapshots = plot_config.get('n_snapshots', 6)
-    out_dir = plot_config.get('out_dir', False)
-    filename = plot_config.get('filename', 'snapshots')
-    agent_shape = plot_config.get('agent_shape', 'segment')
-    phylogeny_names = plot_config.get('phylogeny_names', True)
-    skip_fields = plot_config.get('skip_fields', [])
-    include_fields = plot_config.get('include_fields', None)
-    field_label_size = plot_config.get('field_label_size', 20)
-    default_font_size = plot_config.get('default_font_size', 36)
-    dead_color = plot_config.get('dead_color', [0, 0, 0])
-
-    # get data
-    agents = data.get('agents', {})
-    fields = data.get('fields', {})
-    config = data.get('config', {})
-    bounds = config.get('bounds', DEFAULT_BOUNDS)
-    edge_length_x = bounds[0]
-    edge_length_y = bounds[1]
 
     # time steps that will be used
     if agents and fields:
@@ -339,38 +341,63 @@ def plot_snapshots(data, plot_config):
     snapshot_times = [time_vec[i] for i in time_indices]
 
     # get fields id and range
-    field_ids = []
-    if fields:
-        if include_fields is None:
-            field_ids = set(fields[time_vec[0]].keys())
-        else:
-            field_ids = set(include_fields)
-        field_ids -= set(skip_fields)
-        field_range = {}
-        for field_id in field_ids:
-            field_min = min([min(min(field_data[field_id])) for t, field_data in fields.items()])
-            field_max = max([max(max(field_data[field_id])) for t, field_data in fields.items()])
-            field_range[field_id] = [field_min, field_max]
+    field_range = get_field_range(fields, include_fields, time_vec, skip_fields)
 
     # get agent ids
-    agent_ids = set()
-    if agents:
-        for time, time_data in agents.items():
-            current_agents = list(time_data.keys())
-            agent_ids.update(current_agents)
-        agent_ids = list(agent_ids)
+    agent_colors = get_agent_colors(agents, phylogeny_names)
 
-        # set agent colors
-        if phylogeny_names:
-            agent_colors = get_phylogeny_colors_from_names(agent_ids)
-        else:
-            agent_colors = {}
-            for agent_id in agent_ids:
-                hue = random.choice(HUES)  # select random initial hue
-                color = [hue] + DEFAULT_SV
-                agent_colors[agent_id] = color
+    make_snapshots_figure(
+        agents=agents,
+        agent_colors=agent_colors,
+        fields=fields,
+        field_range=field_range,
+        n_snapshots=n_snapshots,
+        time_indices=time_indices,
+        snapshot_times=snapshot_times,
+        bounds=bounds,
+    )
+
+# def make_single_snapshot():
+
+def make_snapshots_figure(
+    agents,
+    fields,
+    bounds,
+    n_snapshots,
+    time_indices,
+    snapshot_times,
+    field_range=None,
+    agent_colors=None,
+    dead_color=[0, 0, 0],
+    default_font_size=36,
+    field_label_size=20,
+    agent_shape='segment',
+    out_dir=False,
+    filename='snapshots',
+):
+    '''
+    Args:
+        * **bounds** (:py:class:`tuple`): The dimensions of the
+          environment.
+        * **field_label_size** (:py:class:`float`): Font size of the
+          field label.
+        * **dead_color** (:py:class:`list` of 3 :py:class:`float`s):
+          Color for dead cells in HSV. Defaults to [0, 0, 0], which
+          is black.
+        * **default_font_size** (:py:class:`float`): Font size for
+          titles and axis labels.
+        * **agent_shape** (:py:class:`str`): the shape of the agents.
+          select from **rectangle**, **segment**
+        * **out_dir** (:py:class:`str`): Output directory, which is
+          ``out`` by default.
+        * **filename** (:py:class:`str`): Base name of output file.
+          ``snapshots`` by default.
+    '''
+    edge_length_x = bounds[0]
+    edge_length_y = bounds[1]
 
     # make the figure
+    field_ids = list(field_range.keys())
     n_rows = max(len(field_ids), 1)
     n_cols = n_snapshots + 1  # one column for the colorbar
     figsize = (12 * n_cols, 12 * n_rows)
@@ -382,6 +409,7 @@ def plot_snapshots(data, plot_config):
 
     # plot snapshot data in each subsequent column
     for col_idx, (time_idx, time) in enumerate(zip(time_indices, snapshot_times)):
+
         if field_ids:
             for row_idx, field_id in enumerate(field_ids):
 

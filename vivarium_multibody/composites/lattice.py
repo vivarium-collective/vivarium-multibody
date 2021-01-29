@@ -22,7 +22,10 @@ from vivarium_multibody.composites.grow_divide import GrowDivide
 
 # plots
 from vivarium.plots.agents_multigen import plot_agents_multigen
-from vivarium_multibody.plots.snapshots import make_snapshots_plot
+from vivarium_multibody.plots.snapshots import (
+    format_snapshot_data,
+    plot_snapshots,
+)
 
 NAME = 'lattice_environment'
 
@@ -148,7 +151,6 @@ def test_lattice(
 ):
     # configure the compartment
     lattice_config = config or make_lattice_config()
-    # lattice_composite = Lattice(config)
 
     # declare the hierarchy
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
@@ -163,7 +165,7 @@ def test_lattice(
                     'config': {
                         'agent_id': agent_id,
                         'growth': {
-                            'growth_rate': 0.006,  # very fast growth
+                            'growth_rate': 0.05,  # 0.006 very fast growth
                             'default_growth_noise': 1e-3,
                         },
                         'divide_condition': {
@@ -207,13 +209,14 @@ def main():
     data = test_lattice(
         config=config,
         n_agents=1,
-        total_time=12000)
+        total_time=4000)
 
     plot_settings = {}
     plot_agents_multigen(data, plot_settings, out_dir)
 
-    make_snapshots_plot(data, bounds, out_dir)
-
+    agents, fields = format_snapshot_data(data)
+    plot_snapshots(
+        bounds, agents=agents, fields=fields, out_dir=out_dir)
 
 if __name__ == '__main__':
     main()
