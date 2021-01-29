@@ -246,7 +246,7 @@ def format_snapshot_data(data):
 
 
 
-def get_field_range(fields, include_fields, time_vec, skip_fields):
+def get_field_range(fields, time_vec, include_fields=None, skip_fields=[]):
     field_range = {}
     if fields:
         if include_fields is None:
@@ -262,7 +262,7 @@ def get_field_range(fields, include_fields, time_vec, skip_fields):
     return field_range
 
 
-def get_agent_colors(agents, phylogeny_names=None):
+def get_agent_colors(agents, phylogeny_names=True):
     agent_ids = set()
     if agents:
         for time, time_data in agents.items():
@@ -337,14 +337,15 @@ def plot_snapshots(
     else:
         raise Exception('No agents or field data')
 
-    time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
-    snapshot_times = [time_vec[i] for i in time_indices]
-
     # get fields id and range
-    field_range = get_field_range(fields, include_fields, time_vec, skip_fields)
+    field_range = get_field_range(fields, time_vec, include_fields, skip_fields)
 
     # get agent ids
     agent_colors = get_agent_colors(agents, phylogeny_names)
+
+    # get time data
+    time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
+    snapshot_times = [time_vec[i] for i in time_indices]
 
     return make_snapshots_figure(
         agents=agents,
@@ -367,6 +368,7 @@ def make_snapshots_figure(
     n_snapshots,
     time_indices,
     snapshot_times,
+    plot_width=12,
     field_range=None,
     agent_colors=None,
     dead_color=[0, 0, 0],
@@ -401,7 +403,7 @@ def make_snapshots_figure(
     field_ids = list(field_range.keys())
     n_rows = max(len(field_ids), 1)
     n_cols = n_snapshots + 1  # one column for the colorbar
-    figsize = (12 * n_cols, 12 * n_rows)
+    figsize = (plot_width * n_cols, plot_width * n_rows)
     max_dpi = min([2**16 // dim for dim in figsize]) - 1
     fig = plt.figure(figsize=figsize, dpi=min(max_dpi, 100))
     grid = plt.GridSpec(n_rows, n_cols, wspace=0.2, hspace=0.2)
@@ -417,6 +419,7 @@ def make_snapshots_figure(
                 ax = init_axes(
                     fig, edge_length_x, edge_length_y, grid, row_idx,
                     col_idx, time, field_id, field_label_size,
+                    title_size=default_font_size,
                 )
                 ax.tick_params(
                     axis='both', which='both', bottom=False, top=False,
@@ -454,7 +457,8 @@ def make_snapshots_figure(
             row_idx = 0
             ax = init_axes(
                 fig, bounds[0], bounds[1], grid, row_idx, col_idx,
-                time, ""
+                time, "",
+                title_size=default_font_size
             )
 
             if agents:
@@ -596,6 +600,7 @@ def plot_tags(data, plot_config):
             ax = init_axes(
                 fig, edge_length_x, edge_length_y, grid,
                 row_idx, col_idx, time, tag_name, tag_label_size,
+                title_size=default_font_size
             )
             ax.tick_params(
                 axis='both', which='both', bottom=False, top=False,
