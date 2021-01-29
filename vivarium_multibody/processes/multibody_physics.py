@@ -304,8 +304,8 @@ def make_random_position(bounds):
 
 def single_agent_config(config):
     # cell dimensions
-    width = 1
-    length = 2
+    width = 1.0
+    length = 2.0
     volume = volume_from_length(length, width)
     bounds = config.get('bounds', DEFAULT_BOUNDS)
     location = config.get('location')
@@ -314,15 +314,16 @@ def single_agent_config(config):
     else:
         location = make_random_position(bounds)
 
-    return {'boundary': {
-        'location': location,
-        'angle': np.random.uniform(0, 2 * PI),
-        'volume': volume,
-        'length': length,
-        'width': width,
-        'mass': 1339 * units.fg,
-        'thrust': 0,
-        'torque': 0}}
+    return {
+        'boundary': {
+            'location': location,
+            'angle': np.random.uniform(0, 2 * PI),
+            'volume': volume,
+            'length': length,
+            'width': width,
+            'mass': 1339 * units.fg,
+            'thrust': 0,
+            'torque': 0}}
 
 
 def agent_body_config(config):
@@ -346,18 +347,21 @@ class InvokeUpdate(object):
         return self.update
 
 # tests and simulations
-def test_multibody(config={'n_agents':1}, time=10):
-    n_agents = config.get('n_agents',1)
-    agent_ids = [str(agent_id) for agent_id in range(n_agents)]
+def test_multibody(n_agents=1, time=10):
+    agent_ids = [
+        str(agent_id)
+        for agent_id in range(n_agents)]
+    multibody_config = {
+        'agents': agent_body_config({
+            'bounds': DEFAULT_BOUNDS,
+            'agent_ids': agent_ids})}
 
-    body_config = {
-        'agents': agent_body_config({'agent_ids': agent_ids})}
-    multibody = Multibody(body_config)
+    multibody = Multibody(multibody_config)
 
     # initialize agent's boundary state
-    initial_agents_state = body_config['agents']
-    experiment = process_in_experiment(multibody)
-    experiment.state.set_value({'agents': initial_agents_state})
+    initial_agents_state = multibody_config['agents']
+    initial_state = {'agents': initial_agents_state}
+    experiment = process_in_experiment(multibody, initial_state=initial_state)
 
     # run experiment
     settings = {
@@ -371,7 +375,7 @@ def test_growth_division(
         config=default_gd_config,
         growth_rate=0.05,
         growth_rate_noise=0.001,
-        division_volume=0.4 * DEFAULT_LENGTH_UNIT ** 3,
+        division_volume=0.4**3,
         total_time=10,
         timestep=1,
         experiment_settings={},
