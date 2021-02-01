@@ -153,10 +153,10 @@ def test_lattice(
         lattice_config=None,
 ):
     external_molecule = 'glucose'
-
     lattice_config_kwargs = lattice_config or {
         'bounds': [25, 25],
         'concentrations': {external_molecule: 1.0}}
+
     # configure the compartment
     lattice_config = make_lattice_config(**lattice_config_kwargs)
 
@@ -211,7 +211,9 @@ def main():
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     os.makedirs(out_dir, exist_ok=True)
 
-    bounds = [25, 25]
+    bounds = [15, 15]
+    n_bins = [15, 15]
+    depth = 10
 
     # run the simulation
     data = test_lattice(
@@ -219,7 +221,10 @@ def main():
         total_time=2000,
         lattice_config={
             'bounds': bounds,
-            'random_fields': True,
+            'n_bins': n_bins,
+            'depth': depth,
+            'diffusion': 1e-2,
+            # 'random_fields': True,
             'concentrations': {
                 'glucose': 1.0}})
 

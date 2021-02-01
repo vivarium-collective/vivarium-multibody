@@ -1,16 +1,19 @@
 from vivarium.core.process import Process
+from vivarium.library.units import units
 
 
 class Exchange(Process):
     """ Exchange
-    A minimal exchange process that moves molecules between two ports
+    A minimal exchange process that moves molecules between two ports.
     """
     defaults = {
         'molecules': [],
         'uptake_rate': {},
         'secrete_rate': {},
-        'default_uptake_rate': 1e-3,
-        'default_secrete_rate': 1e-5,
+        'default_uptake_rate': 1e-1,
+        'default_secrete_rate': 1e-4,
+        # calculated in deriver_globals assuming mass = 1000 fg, density = 1100 g/L
+        'mmol_to_counts': 547467.342,  # units.L / units.mmol
     }
 
     def __init__(self, parameters=None):
@@ -50,10 +53,11 @@ class Exchange(Process):
             for mol_id, mol_ex in external_molecules.items()}
 
         # convert delta concentrations to exchange counts
-        # import ipdb; ipdb.set_trace()
+        # assumes concentrations in mmol/L
+        exchange_counts = {}
+        for molecule, concentration in delta_in.items():
+            exchange_counts[molecule] = -int(concentration * self.parameters['mmol_to_counts'])
 
         return {
             'internal': delta_in,
-            'exchange': {
-                mol_id: -delta
-                for mol_id, delta in delta_in.items()}}
+            'exchange': exchange_counts}
