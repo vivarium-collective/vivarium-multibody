@@ -180,9 +180,11 @@ def test_grow_divide_exchange(total_time=2000):
                 'global': {
                     'mass': 1000 * units.fg},
                 'external': {
-                    molecule_id: 10.0 * units.mmol / units.L},
+                    molecule_id: 10.0},
+                    # molecule_id: 10.0 * units.mmol / units.L},
                 'internal': {
-                    molecule_id: 0.0 * units.mmol / units.L}
+                    molecule_id: 0.0}
+                    # molecule_id: 0.0 * units.mmol / units.L}
             }}}
 
     settings = {
