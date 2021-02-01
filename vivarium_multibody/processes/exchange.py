@@ -26,6 +26,9 @@ class Exchange(Process):
 
     def ports_schema(self):
         return {
+            'exchange': {
+                mol_id: {'_default': 0}
+                for mol_id in self.parameters['molecules']},
             'external': {
                 mol_id: {
                     '_default': 0.0,
@@ -46,10 +49,11 @@ class Exchange(Process):
                     internal_molecules[mol_id] * self.secrete_rate[mol_id] * timestep
             for mol_id, mol_ex in external_molecules.items()}
 
-
+        # convert delta concentrations to exchange counts
+        # import ipdb; ipdb.set_trace()
 
         return {
             'internal': delta_in,
-            'external': {
+            'exchange': {
                 mol_id: -delta
                 for mol_id, delta in delta_in.items()}}

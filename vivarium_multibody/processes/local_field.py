@@ -9,8 +9,8 @@ from vivarium_multibody.library.lattice_utils import (
     count_to_concentration,
 )
 
-CONCENTRATION_UNIT = 1  # TODO (ERAN) set value -- units.ng / units.mL
-LENGTH_UNIT = units.um
+CONCENTRATION_UNIT = 1
+LENGTH_UNIT = 1  # units.um
 
 
 class LocalField(Deriver):

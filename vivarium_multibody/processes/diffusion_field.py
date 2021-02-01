@@ -22,7 +22,7 @@ from vivarium.library.units import units
 from vivarium_multibody.library.lattice_utils import (
     count_to_concentration,
     get_bin_site,
-    get_bin_volume,
+    get_bin_volume, make_gradient,
 )
 from vivarium_multibody.plots.snapshots import plot_snapshots
 
@@ -31,196 +31,6 @@ NAME = 'diffusion_field'
 # laplacian kernel for diffusion
 LAPLACIAN_2D = np.array([[0.0, 1.0, 0.0], [1.0, -4.0, 1.0], [0.0, 1.0, 0.0]])
 AVOGADRO = constants.N_A
-
-
-def gaussian(deviation, distance):
-    return np.exp(-np.power(distance, 2.) / (2 * np.power(deviation, 2.)))
-
-def make_gradient(gradient, n_bins, size):
-    '''Create a gradient from a configuration
-
-    **Random**
-    A random gradient fills the field randomly with each molecule,
-    with values between 0 and the concentrations specified.
-
-    Example configuration:
-
-    .. code-block:: python
-
-        'gradient': {
-            'type': 'random',
-            'molecules': {
-                'mol_id1': 1.0,
-                'mol_id2': 2.0
-            }},
-
-    **Uniform**
-
-    A uniform gradient fills the field evenly with each molecule, at
-    the concentrations specified.
-
-    Example configuration:
-
-    .. code-block:: python
-
-        'gradient': {
-            'type': 'uniform',
-            'molecules': {
-                'mol_id1': 1.0,
-                'mol_id2': 2.0
-            }},
-
-    **Gaussian**
-
-    A gaussian gradient multiplies the base concentration of the given
-    molecule by a gaussian function of distance from center and
-    deviation. Distance is scaled by 1/1000 from microns to millimeters.
-
-    Example configuration:
-
-    .. code-block:: python
-
-        'gradient': {
-            'type': 'gaussian',
-            'molecules': {
-                'mol_id1':{
-                    'center': [0.25, 0.5],
-                    'deviation': 30},
-                'mol_id2': {
-                    'center': [0.75, 0.5],
-                    'deviation': 30}
-            }},
-
-    **Linear**
-
-    A linear gradient sets a site's concentration (c) of the given
-    molecule as a function of distance (d) from center and slope (b),
-    and base concentration (a). Distance is scaled by 1/1000 from
-    microns to millimeters.
-
-    .. math::
-        c = a + b * d
-
-    Example configuration:
-
-    .. code-block:: python
-
-        'gradient': {
-            'type': 'linear',
-            'molecules': {
-                'mol_id1':{
-                    'center': [0.0, 0.0],
-                    'base': 0.1,
-                    'slope': -10},
-                'mol_id2': {
-                    'center': [1.0, 1.0],
-                    'base': 0.1,
-                    'slope': -5}
-            }},
-
-    **Exponential**
-
-    An exponential gradient sets a site's concentration (c) of the given
-    molecule as a function of distance (d) from center, with parameters
-    base (b) and scale (a). Distance is scaled by 1/1000 from microns to
-    millimeters. Note: base > 1 makes concentrations increase from the
-    center.
-
-    .. math::
-
-        c=a*b^d.
-
-    Example configuration:
-
-    .. code-block:: python
-
-        'gradient': {
-            'type': 'exponential',
-            'molecules': {
-                'mol_id1':{
-                    'center': [0.0, 0.0],
-                    'base': 1+2e-4,
-                    'scale': 1.0},
-                'mol_id2': {
-                    'center': [1.0, 1.0],
-                    'base': 1+2e-4,
-                    'scale' : 0.1}
-            }},
-
-    Parameters:
-        gradient: Configuration dictionary that includes the ``type``
-            key to specify the type of gradient to make.
-        n_bins: A list of two elements that specify the number of bins
-            to have along each axis.
-        size: A list of two elements that specifies the size of the
-            environment.
-    '''
-    bins_x = n_bins[0]
-    bins_y = n_bins[1]
-    length_x = size[0]
-    length_y = size[1]
-    fields = {}
-
-    if gradient.get('type') == 'random':
-        for molecule_id, fill_value in gradient['molecules'].items():
-            field = fill_value * np.random.rand(bins_x, bins_y)
-            fields[molecule_id] = field
-
-    if gradient.get('type') == 'gaussian':
-        for molecule_id, specs in gradient['molecules'].items():
-            field = np.ones((bins_x, bins_y), dtype=np.float64)
-            center = [specs['center'][0] * length_x,
-                      specs['center'][1] * length_y]
-            deviation = specs['deviation']
-
-            for x_bin in range(bins_x):
-                for y_bin in range(bins_y):
-                    # distance from middle of bin to center coordinates
-                    dx = (x_bin + 0.5) * length_x / bins_x - center[0]
-                    dy = (y_bin + 0.5) * length_y / bins_y - center[1]
-                    distance = np.sqrt(dx ** 2 + dy ** 2)
-                    scale = gaussian(deviation, (distance/1000))
-                    # multiply gradient by scale
-                    field[x_bin][y_bin] *= scale
-            fields[molecule_id] = field
-
-    elif gradient.get('type') == 'linear':
-        for molecule_id, specs in gradient['molecules'].items():
-            field = np.zeros((bins_x, bins_y), dtype=np.float64)
-            center = [specs['center'][0] * length_x,
-                      specs['center'][1] * length_y]
-            base = specs.get('base', 0.0)
-            slope = specs['slope']
-
-            for x_bin in range(bins_x):
-                for y_bin in range(bins_y):
-                    dx = (x_bin + 0.5) * length_x / bins_x - center[0]
-                    dy = (y_bin + 0.5) * length_y / bins_y - center[1]
-                    distance = np.sqrt(dx ** 2 + dy ** 2)
-                    field[x_bin][y_bin] += base + slope * (distance/1000)
-            fields[molecule_id] = field
-
-    elif gradient.get('type') == 'exponential':
-        for molecule_id, specs in gradient['molecules'].items():
-            field = np.zeros((bins_x, bins_y), dtype=np.float64)
-            center = [specs['center'][0] * length_x,
-                      specs['center'][1] * length_y]
-            base = specs['base']
-            scale = specs.get('scale', 1)
-
-            for x_bin in range(bins_x):
-                for y_bin in range(bins_y):
-                    dx = (x_bin + 0.5) * length_x / bins_x - center[0]
-                    dy = (y_bin + 0.5) * length_y / bins_y - center[1]
-                    distance = np.sqrt(dx ** 2 + dy ** 2)
-                    field[x_bin][y_bin] = scale * base ** (distance/1000)
-            fields[molecule_id] = field
-
-    elif gradient.get('type') == 'uniform':
-        for molecule_id, fill_value in gradient['molecules'].items():
-            fields[molecule_id] = np.full((bins_x, bins_y), fill_value, dtype=np.float64)
-
-    return fields
 
 
 class DiffusionField(Process):
@@ -251,8 +61,7 @@ class DiffusionField(Process):
     }
 
     def __init__(self, initial_parameters=None):
-        if initial_parameters is None:
-            initial_parameters = {}
+        initial_parameters = initial_parameters or {}
 
         # initial state
         self.molecule_ids = initial_parameters.get('molecules', self.defaults['molecules'])

@@ -152,9 +152,11 @@ def test_lattice(
         total_time=1000,
         lattice_config=None,
 ):
+    external_molecule = 'glucose'
+
     lattice_config_kwargs = lattice_config or {
         'bounds': [25, 25],
-        'concentrations': {'glucose': 1.0}}
+        'concentrations': {external_molecule: 1.0}}
     # configure the compartment
     lattice_config = make_lattice_config(**lattice_config_kwargs)
 
@@ -176,6 +178,9 @@ def test_lattice(
                         },
                         'divide_condition': {
                             'threshold': 3000 * units.fg
+                        },
+                        'exchange': {
+                            'molecules': [external_molecule]
                         },
                         '_schema': {}
                     }}

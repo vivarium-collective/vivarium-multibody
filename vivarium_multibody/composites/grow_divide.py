@@ -14,8 +14,11 @@ from vivarium.processes.divide_condition import DivideCondition
 from vivarium.processes.meta_division import MetaDivision
 from vivarium_multibody.processes.derive_globals import DeriveGlobals
 from vivarium_multibody.processes.exchange import Exchange
+from vivarium_multibody.processes.local_field import LocalField
+
 
 NAME = 'grow_divide'
+
 
 GROW_DIVIDE_DEFAULTS = {
         'growth': {
@@ -76,25 +79,48 @@ class GrowDivide(Composite):
 
 
 class GrowDivideExchange(GrowDivide):
+    name = 'grow_divide_exchange'
     defaults = GROW_DIVIDE_DEFAULTS
-    defaults.update({'exchange': {
-        'molecules': ['A'],
-    }})
+    defaults.update({
+        'exchange': {
+            'molecules': ['A'],
+        },
+
+        'fields_path': ('..', '..', 'fields'),
+        'dimensions_path': ('..', '..', 'dimensions',),
+    })
 
     def generate_processes(self, config):
         processes = super().generate_processes(config)
-        exchange_process = {
-            'exchange': Exchange(config['exchange'])}
-        processes.update(exchange_process)
+
+        added_processes = {
+            'exchange': Exchange(config['exchange']),
+            'local_field': LocalField(),
+        }
+        processes.update(added_processes)
         return processes
 
     def generate_topology(self, config):
         topology = super().generate_topology(config)
-        exchange_topology = {
+
+        boundary_path = config['boundary_path']
+        fields_path = config['fields_path']
+        dimensions_path = config['dimensions_path']
+
+        added_topology = {
             'exchange': {
-                'external': ('external',),
-                'internal': ('internal',)}}
-        topology.update(exchange_topology)
+                'exchange': boundary_path + ('exchange',),
+                'external': boundary_path + ('external',),
+                'internal': ('internal',),
+            },
+            'local_field': {
+                'exchanges': boundary_path + ('exchange',),
+                'location': boundary_path + ('location',),
+                'fields': fields_path,
+                'dimensions': dimensions_path,
+            }
+        }
+        topology.update(added_topology)
         return topology
 
 
