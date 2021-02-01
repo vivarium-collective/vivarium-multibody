@@ -17,7 +17,7 @@ from vivarium_multibody.processes.diffusion_field import (
     DiffusionField,
 )
 from vivarium_multibody.processes.derive_colony_shape import ColonyShapeDeriver
-from vivarium_multibody.composites.grow_divide import GrowDivide
+from vivarium_multibody.composites.grow_divide import GrowDivideExchange
 
 
 # plots
@@ -38,6 +38,7 @@ def make_lattice_config(
         n_bins=None,
         depth=None,
         concentrations=None,
+        random_fields=None,
         molecules=None,
         diffusion=None,
         keep_fields_emit=None,
@@ -65,6 +66,8 @@ def make_lattice_config(
         config['diffusion']['gradient'] = {
             'type': 'uniform',
             'molecules': concentrations}
+        if random_fields:
+            config['diffusion']['gradient']['type'] = 'random'
         molecules = list(concentrations.keys())
         config['diffusion']['molecules'] = molecules
     elif molecules:
@@ -145,12 +148,15 @@ class Lattice(Composite):
 
 
 def test_lattice(
-        config=None,
         n_agents=1,
-        total_time=1000
+        total_time=1000,
+        lattice_config=None,
 ):
+    lattice_config_kwargs = lattice_config or {
+        'bounds': [25, 25],
+        'concentrations': {'glucose': 1.0}}
     # configure the compartment
-    lattice_config = config or make_lattice_config()
+    lattice_config = make_lattice_config(**lattice_config_kwargs)
 
     # declare the hierarchy
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
@@ -161,7 +167,7 @@ def test_lattice(
         'agents': {
             agent_id: {
                 FACTORY_KEY: {
-                    'type': GrowDivide,
+                    'type': GrowDivideExchange,
                     'config': {
                         'agent_id': agent_id,
                         'growth': {
@@ -201,21 +207,26 @@ def main():
     os.makedirs(out_dir, exist_ok=True)
 
     bounds = [25, 25]
-    config = make_lattice_config(
-        bounds=bounds,
-        concentrations={'glucose': 1.0}
-    )
+
+    # run the simulation
     data = test_lattice(
-        config=config,
         n_agents=1,
-        total_time=1000)
+        total_time=2000,
+        lattice_config={
+            'bounds': bounds,
+            'random_fields': True,
+            'concentrations': {
+                'glucose': 1.0}})
 
     plot_settings = {}
-    plot_agents_multigen(data, plot_settings, out_dir)
+    plot_agents_multigen(
+        data, plot_settings, out_dir, 'lattice_multigen')
 
     agents, fields = format_snapshot_data(data)
     plot_snapshots(
-        bounds, agents=agents, fields=fields, out_dir=out_dir)
+        bounds, agents=agents, fields=fields,
+        out_dir=out_dir, filename='lattice_snapshots')
+
 
 if __name__ == '__main__':
     main()

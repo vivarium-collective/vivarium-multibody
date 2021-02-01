@@ -139,7 +139,7 @@ def test_grow_divide(total_time=2000):
 def test_grow_divide_exchange(total_time=2000):
 
     agent_id = '0'
-    molecule_id= 'A'
+    molecule_id = 'A'
     composite = GrowDivideExchange({
         'agent_id': agent_id,
         'growth': {
@@ -180,6 +180,7 @@ def test_grow_divide_exchange(total_time=2000):
     assert len(output[total_time]['agents']) > 1
 
     return output
+
 
 def main():
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)

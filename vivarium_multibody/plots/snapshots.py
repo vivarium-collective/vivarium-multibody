@@ -291,6 +291,7 @@ def plot_snapshots(
         skip_fields=[],
         include_fields=None,
         out_dir=None,
+        filename=None,
 ):
     '''Plot snapshots of the simulation over time
 
@@ -357,9 +358,9 @@ def plot_snapshots(
         snapshot_times=snapshot_times,
         bounds=bounds,
         out_dir=out_dir,
+        filename=filename,
     )
 
-# def make_single_snapshot():
 
 def make_snapshots_figure(
     agents,

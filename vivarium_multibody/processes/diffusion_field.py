@@ -39,6 +39,21 @@ def gaussian(deviation, distance):
 def make_gradient(gradient, n_bins, size):
     '''Create a gradient from a configuration
 
+    **Random**
+    A random gradient fills the field randomly with each molecule,
+    with values between 0 and the concentrations specified.
+
+    Example configuration:
+
+    .. code-block:: python
+
+        'gradient': {
+            'type': 'random',
+            'molecules': {
+                'mol_id1': 1.0,
+                'mol_id2': 2.0
+            }},
+
     **Uniform**
 
     A uniform gradient fills the field evenly with each molecule, at
@@ -145,6 +160,11 @@ def make_gradient(gradient, n_bins, size):
     length_x = size[0]
     length_y = size[1]
     fields = {}
+
+    if gradient.get('type') == 'random':
+        for molecule_id, fill_value in gradient['molecules'].items():
+            field = fill_value * np.random.rand(bins_x, bins_y)
+            fields[molecule_id] = field
 
     if gradient.get('type') == 'gaussian':
         for molecule_id, specs in gradient['molecules'].items():
