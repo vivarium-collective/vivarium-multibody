@@ -13,14 +13,11 @@ from vivarium.processes.growth_rate import GrowthRate
 from vivarium.processes.divide_condition import DivideCondition
 from vivarium.processes.meta_division import MetaDivision
 from vivarium_multibody.processes.derive_globals import DeriveGlobals
+from vivarium_multibody.processes.exchange import Exchange
 
 NAME = 'grow_divide'
 
-
-
-class GrowDivide(Composite):
-
-    defaults = {
+GROW_DIVIDE_DEFAULTS = {
         'growth': {
             'variables': ['mass'],
         },
@@ -36,6 +33,9 @@ class GrowDivide(Composite):
                         '_default': 1000.0 * units.fg,
                         '_divider': 'split',
                     }}}}}
+
+class GrowDivide(Composite):
+    defaults = GROW_DIVIDE_DEFAULTS
 
     def generate_processes(self, config):
         # division config
@@ -75,6 +75,28 @@ class GrowDivide(Composite):
 
 
 
+class GrowDivideExchange(GrowDivide):
+    defaults = GROW_DIVIDE_DEFAULTS
+    defaults.update({'exchange': {
+        'molecules': ['A'],
+    }})
+
+    def generate_processes(self, config):
+        processes = super().generate_processes(config)
+        exchange_process = {
+            'exchange': Exchange(config['exchange'])}
+        processes.update(exchange_process)
+        return processes
+
+    def generate_topology(self, config):
+        topology = super().generate_topology(config)
+        exchange_topology = {
+            'exchange': {
+                'external': ('external',),
+                'internal': ('internal',)}}
+        topology.update(exchange_topology)
+        return topology
+
 
 def test_grow_divide(total_time=2000):
 
@@ -97,7 +119,51 @@ def test_grow_divide(total_time=2000):
     settings = {
         'initial_state': initial_state,
         'outer_path': ('agents', agent_id),
-        'experiment_id': 'division'}
+        'experiment_id': 'grow_divide'}
+    experiment = compartment_in_experiment(
+        composite,
+        settings=settings)
+
+    experiment.update(total_time)
+    output = experiment.emitter.get_data_unitless()
+
+    # assert division occurred
+    assert list(output[0.0]['agents'].keys()) == [agent_id]
+    assert agent_id not in list(output[total_time]['agents'].keys())
+    assert len(output[0.0]['agents']) == 1
+    assert len(output[total_time]['agents']) > 1
+
+    return output
+
+
+def test_grow_divide_exchange(total_time=2000):
+
+    agent_id = '0'
+    molecule_id= 'A'
+    composite = GrowDivideExchange({
+        'agent_id': agent_id,
+        'growth': {
+            'growth_rate': 0.006,  # very fast growth
+            'default_growth_noise': 1e-3},
+        'exchange': {
+            'molecules': [molecule_id],
+        }})
+
+    initial_state = {
+        'agents': {
+            agent_id: {
+                'global': {
+                    'mass': 1000 * units.fg},
+                'external': {
+                    molecule_id: 10.0 * units.mmol / units.L},
+                'internal': {
+                    molecule_id: 0.0 * units.mmol / units.L}
+            }}}
+
+    settings = {
+        'initial_state': initial_state,
+        'outer_path': ('agents', agent_id),
+        'experiment_id': 'grow_divide_exchange'}
     experiment = compartment_in_experiment(
         composite,
         settings=settings)
@@ -115,17 +181,23 @@ def test_grow_divide(total_time=2000):
 
     return output
 
-
 def main():
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    output = test_grow_divide(6000)
+    grow_divide = False
+    grow_divide_exchange = True
 
-    plot_settings = {}
-    plot_agents_multigen(output, plot_settings, out_dir)
+    if grow_divide:
+        output = test_grow_divide(2000)
+        plot_settings = {}
+        plot_agents_multigen(output, plot_settings, out_dir, 'grow_divide')
 
+    if grow_divide_exchange:
+        output = test_grow_divide_exchange(2000)
+        plot_settings = {}
+        plot_agents_multigen(output, plot_settings, out_dir, 'grow_divide_exchange')
 
 if __name__ == '__main__':
     main()

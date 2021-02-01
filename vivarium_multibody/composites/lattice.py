@@ -203,11 +203,12 @@ def main():
     bounds = [25, 25]
     config = make_lattice_config(
         bounds=bounds,
+        concentrations={'glucose': 1.0}
     )
     data = test_lattice(
         config=config,
         n_agents=1,
-        total_time=4000)
+        total_time=1000)
 
     plot_settings = {}
     plot_agents_multigen(data, plot_settings, out_dir)
