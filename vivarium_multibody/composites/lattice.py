@@ -16,7 +16,6 @@ from vivarium_multibody.processes.multibody_physics import (
 from vivarium_multibody.processes.diffusion_field import (
     DiffusionField,
 )
-from vivarium_multibody.processes.derive_colony_shape import ColonyShapeDeriver
 from vivarium_multibody.composites.grow_divide import GrowDivideExchange
 
 
@@ -111,7 +110,6 @@ class Lattice(Composite):
             'depth': 3000.0,
             'diffusion': 1e-2,
         },
-        'colony_shape_deriver': None,
     }
 
     def generate_processes(self, config):
@@ -119,14 +117,10 @@ class Lattice(Composite):
             'multibody': Multibody(config['multibody']),
             'diffusion': DiffusionField(config['diffusion'])
         }
-        colony_shape_config = config['colony_shape_deriver']
-        if colony_shape_config is not None:
-            processes['colony_shape_deriver'] = ColonyShapeDeriver(
-                colony_shape_config)
         return processes
 
     def generate_topology(self, config):
-        topology = {
+        return {
             'multibody': {
                 'agents': ('agents',),
             },
@@ -135,16 +129,8 @@ class Lattice(Composite):
                 'fields': ('fields',),
                 'dimensions': ('dimensions',),
             },
-            'colony_shape_deriver': {
-                'colony_global': ('colony_global',),
-                'agents': ('agents',),
-            }
         }
-        return {
-            process: process_topology
-            for process, process_topology in topology.items()
-            if config[process] is not None
-        }
+
 
 
 def test_lattice(
