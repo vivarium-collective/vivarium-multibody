@@ -1,10 +1,10 @@
 import os
 
-from vivarium.core.process import Composite
+from vivarium.core.process import Composer
 from vivarium.core.composition import (
     compose_experiment,
     COMPOSITE_OUT_DIR,
-    FACTORY_KEY
+    COMPOSER_KEY
 )
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
@@ -90,7 +90,7 @@ def make_lattice_config(
 
 
 
-class Lattice(Composite):
+class Lattice(Composer):
     """
     Lattice:  A two-dimensional lattice environmental model with multibody physics and diffusing molecular fields.
     """
@@ -149,12 +149,12 @@ def test_lattice(
     # declare the hierarchy
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
     hierarchy = {
-        FACTORY_KEY: {
+        COMPOSER_KEY: {
             'type': Lattice,
             'config': lattice_config},
         'agents': {
             agent_id: {
-                FACTORY_KEY: {
+                COMPOSER_KEY: {
                     'type': GrowDivideExchange,
                     'config': {
                         'agent_id': agent_id,

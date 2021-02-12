@@ -1,8 +1,8 @@
 import os
 
-from vivarium.core.process import Composite
+from vivarium.core.process import Composer
 from vivarium.core.composition import (
-    compartment_in_experiment,
+    composer_in_experiment,
     COMPARTMENT_OUT_DIR,
 )
 
@@ -17,7 +17,7 @@ from vivarium_multibody.processes.static_field import StaticField
 NAME = 'static_lattice'
 
 
-class StaticLattice(Composite):
+class StaticLattice(Composer):
 
     defaults = {
         'multibody': {
@@ -100,7 +100,7 @@ def test_static_lattice(config=get_static_lattice_config(), end_time=10):
     # configure experiment
     experiment_settings = {
         'compartment': config}
-    experiment = compartment_in_experiment(
+    experiment = composer_in_experiment(
         compartment,
         experiment_settings)
 

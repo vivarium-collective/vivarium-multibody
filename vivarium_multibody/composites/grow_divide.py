@@ -1,9 +1,9 @@
 import os
 
 from vivarium.library.units import units
-from vivarium.core.process import Composite
+from vivarium.core.process import Composer
 from vivarium.core.composition import (
-    compartment_in_experiment,
+    composer_in_experiment,
     COMPOSITE_OUT_DIR,
 )
 from vivarium.plots.agents_multigen import plot_agents_multigen
@@ -37,7 +37,7 @@ GROW_DIVIDE_DEFAULTS = {
                         '_divider': 'split',
                     }}}}}
 
-class GrowDivide(Composite):
+class GrowDivide(Composer):
     defaults = GROW_DIVIDE_DEFAULTS
 
     def generate_processes(self, config):
@@ -48,7 +48,7 @@ class GrowDivide(Composite):
             config.get('division', {}),
             daughter_path=daughter_path,
             agent_id=agent_id,
-            generator=self)
+            composer=self)
 
         return {
             'growth': GrowthRate(config['growth']),
@@ -142,11 +142,11 @@ def test_grow_divide(total_time=2000):
             }}}
 
     settings = {
-        'initial_state': initial_state,
-        'outer_path': ('agents', agent_id),
         'experiment_id': 'grow_divide'}
-    experiment = compartment_in_experiment(
+    experiment = composer_in_experiment(
         composite,
+        initial_state=initial_state,
+        outer_path=('agents', agent_id),
         settings=settings)
 
     experiment.update(total_time)
@@ -188,11 +188,11 @@ def test_grow_divide_exchange(total_time=2000):
             }}}
 
     settings = {
-        'initial_state': initial_state,
-        'outer_path': ('agents', agent_id),
         'experiment_id': 'grow_divide_exchange'}
-    experiment = compartment_in_experiment(
+    experiment = composer_in_experiment(
         composite,
+        initial_state=initial_state,
+        outer_path=('agents', agent_id),
         settings=settings)
 
     experiment.update(total_time)
