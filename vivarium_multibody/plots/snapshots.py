@@ -471,7 +471,6 @@ def make_snapshots_figure(
         fig_path = os.path.join(out_dir, filename)
         fig.subplots_adjust(wspace=0.7, hspace=0.1)
         fig.savefig(fig_path, bbox_inches='tight')
-        plt.close(fig)
     return fig
 
 
