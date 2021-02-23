@@ -180,7 +180,9 @@ class DiffusionField(Process):
         bin_site = self.get_bin_site(specs['location'])
         local_environment = {}
         for mol_id, field in fields.items():
-            local_environment[mol_id] = field[bin_site]
+            local_environment[mol_id] = {
+                '_value': field[bin_site],
+                '_updater': 'set'}
         return local_environment
 
     def get_local_environments(self, agents, fields):
