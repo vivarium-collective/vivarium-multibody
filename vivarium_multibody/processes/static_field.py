@@ -32,29 +32,20 @@ class StaticField(Deriver):
         'external_key': 'external',
     }
 
-    def __init__(self, initial_parameters=None):
-        if initial_parameters is None:
-            initial_parameters = {}
+    def __init__(self, parameters=None):
+        super(StaticField, self).__init__(parameters)
 
         # initial state
-        self.molecules = self.or_default(
-            initial_parameters, 'molecules')
+        self.molecules = self.parameters['molecules']
 
         # parameters
-        self.bounds = self.or_default(
-            initial_parameters, 'bounds')
-        self.boundary_port = self.or_default(
-            initial_parameters, 'boundary_port')
-        self.external_key = self.or_default(
-            initial_parameters, 'external_key')
+        self.bounds = self.parameters['bounds']
+        self.boundary_port = self.parameters['boundary_port']
+        self.external_key = self.parameters['external_key']
 
         # initialize gradient fields
-        self.gradient = self.or_default(
-            initial_parameters, 'gradient')
+        self.gradient = self.parameters['gradient']
 
-        parameters = {}
-        parameters.update(initial_parameters)
-        super(StaticField, self).__init__(parameters)
 
     def ports_schema(self):
         local_concentration_schema = {
