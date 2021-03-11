@@ -372,6 +372,7 @@ def make_snapshots_figure(
     plot_width=12,
     field_range=None,
     agent_colors=None,
+    field_colormap='gist_yarg',
     dead_color=[0, 0, 0],
     default_font_size=36,
     field_label_size=20,
@@ -435,7 +436,7 @@ def make_snapshots_figure(
                                 extent=[0, edge_length_x, 0, edge_length_y],
                                 vmin=vmin,
                                 vmax=vmax,
-                                cmap='BuPu')
+                                cmap=field_colormap)
                 if agents:
                     agents_now = agents[time]
                     plot_agents(
