@@ -30,7 +30,7 @@ HUES = [
         np.linspace(hr[0], hr[1], int((hr[1]-hr[0])/HUE_INCREMENT)+1)
         for hr in HUES_RANGE])
     ]
-DEFAULT_HUE = HUES[0]
+DEFAULT_HUE = 45/360
 DEFAULT_SV = [100.0/100.0, 70.0/100.0]
 FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
 
@@ -276,7 +276,7 @@ def get_agent_colors(agents, phylogeny_names=True):
         else:
             agent_colors = {}
             for agent_id in agent_ids:
-                hue = random.choice(HUES)  # select random initial hue
+                hue = DEFAULT_HUE #random.choice(HUES)
                 color = [hue] + DEFAULT_SV
                 agent_colors[agent_id] = color
     return agent_colors
@@ -453,7 +453,7 @@ def make_snapshots_figure(
                         continue
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("left", size="5%", pad=0.0)
-                    fig.colorbar(im, cax=cax, format='%.6f')
+                    fig.colorbar(im, cax=cax, format='%.2f')
                     ax.axis('off')
         else:
             row_idx = 0
@@ -657,7 +657,7 @@ def plot_tags(data, plot_config):
                     ],
                 )
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
-                fig.colorbar(mappable, cax=cax, format='%.6f')
+                fig.colorbar(mappable, cax=cax, format='%.2f')
 
     plt.rcParams.update({'font.size': original_fontsize})
     if out_dir:
