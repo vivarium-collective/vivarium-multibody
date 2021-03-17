@@ -9,7 +9,8 @@ import matplotlib.patches as patches
 import matplotlib.lines as mlines
 from matplotlib.lines import Line2D
 from matplotlib.colors import hsv_to_rgb
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from mpl_toolkits.axes_grid1 import (
+    make_axes_locatable, anchored_artists)
 from matplotlib.collections import LineCollection
 import numpy as np
 
@@ -22,16 +23,10 @@ DEFAULT_BOUNDS = [10, 10]
 PI = math.pi
 
 # colors for phylogeny initial agents
-HUES_RANGE = [[0, 210], [270, 330]]  # skip blues (210-270), they do not show up well
-HUE_INCREMENT = 30
-HUES = [
-    hue/360
-    for hue in np.concatenate([
-        np.linspace(hr[0], hr[1], int((hr[1]-hr[0])/HUE_INCREMENT)+1)
-        for hr in HUES_RANGE])
-    ]
+HUES = [hue/360 for hue in np.linspace(0,360,30)]
 DEFAULT_HUE = 45/360
 DEFAULT_SV = [100.0/100.0, 70.0/100.0]
+BASELINE_TAG_COLOR = [0, 0, 1]  # HSV
 FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
 
 def check_plt_backend():
@@ -60,8 +55,13 @@ class LineWidthData(Line2D):
     _linewidth = property(_get_lw, _set_lw)
 
 def plot_agent(
-        ax, data, color, agent_shape, membrane_width=0.1,
-        membrane_color=[1, 1, 1],
+        ax,
+        data,
+        color,
+        agent_shape,
+        membrane_width=0.1,
+        membrane_color=[0, 0, 0],
+        alpha=1,
     ):
     '''Plot an agent
 
@@ -76,8 +76,11 @@ def plot_agent(
     x_center = data['boundary']['location'][0]
     y_center = data['boundary']['location'][1]
 
-    # get color, convert to rgb
-    rgb = hsv_to_rgb(color)
+    # get color, convert to rgb. Strings are already RGB
+    if isinstance(color, str):
+        rgb = color
+    else:
+        rgb = hsv_to_rgb(color)
 
     if agent_shape == 'rectangle':
         theta = data['boundary']['angle'] / PI * 180 + 90  # rotate 90 degrees to match field
@@ -100,7 +103,8 @@ def plot_agent(
             angle=theta,
             linewidth=membrane_width,
             edgecolor=membrane_color,
-            facecolor=rgb
+            alpha=alpha,
+            facecolor=rgb,
         )
         ax.add_patch(shape)
 
@@ -127,10 +131,12 @@ def plot_agent(
             [x1, x2], [y1, y2],
             color=membrane_color,
             linewidth=width,
+            alpha=alpha,
             solid_capstyle='round')
         line = LineWidthData(
             [x1, x2], [y1, y2],
             color=rgb,
+            alpha=alpha,
             linewidth=width-membrane_width,
             solid_capstyle='round')
         ax.add_line(membrane)
@@ -148,12 +154,19 @@ def plot_agent(
         circle = patches.Circle(
             (x, y), radius, linewidth=membrane_width,
             edgecolor=membrane_color,
+            alpha=alpha,
         )
         ax.add_patch(circle)
 
 def plot_agents(
-    ax, agents, agent_colors=None, agent_shape='segment', dead_color=None,
-    membrane_width=0.1, membrane_color=[1, 1, 1],
+        ax,
+        agents,
+        agent_colors=None,
+        agent_shape='segment',
+        dead_color=None,
+        membrane_width=0.1,
+        membrane_color=[1, 1, 1],
+        alpha=1,
 ):
     '''Plot agents.
 
@@ -169,7 +182,9 @@ def plot_agents(
         membrane_width (float): Width of agent outline to draw.
         membrane_color (list): List of 3 floats that define the RGB
             color to use for agent outlines.
+        alpha: Alpha value for agents.
     '''
+
     if not agent_colors:
         agent_colors = dict()
     for agent_id, agent_data in agents.items():
@@ -178,7 +193,12 @@ def plot_agents(
             if agent_data['boundary']['dead']:
                 color = dead_color
         plot_agent(ax, agent_data, color, agent_shape, membrane_width,
-                membrane_color)
+                membrane_color, alpha)
+
+    if len(agents) == 1:
+        ax.set_title('1 agent', y=1.1)
+    else:
+        ax.set_title(f'{len(agents)} agents', y=1.1)
 
 def mutate_color(baseline_hsv):
     mutation = 0.1
@@ -262,7 +282,7 @@ def get_field_range(fields, time_vec, include_fields=None, skip_fields=[]):
     return field_range
 
 
-def get_agent_colors(agents, phylogeny_names=True):
+def get_agent_colors(agents, phylogeny_names=True, agent_fill_color=None):
     agent_ids = set()
     if agents:
         for time, time_data in agents.items():
@@ -271,12 +291,15 @@ def get_agent_colors(agents, phylogeny_names=True):
         agent_ids = list(agent_ids)
 
         # set agent colors
-        if phylogeny_names:
+        if agent_fill_color:
+            agent_colors = {
+                agent_id: agent_fill_color for agent_id in agent_ids}
+        elif phylogeny_names:
             agent_colors = get_phylogeny_colors_from_names(agent_ids)
         else:
             agent_colors = {}
             for agent_id in agent_ids:
-                hue = DEFAULT_HUE #random.choice(HUES)
+                hue = random.choice(HUES)
                 color = [hue] + DEFAULT_SV
                 agent_colors[agent_id] = color
     return agent_colors
@@ -287,6 +310,9 @@ def plot_snapshots(
         agents={},
         fields={},
         n_snapshots=6,
+        snapshot_times=None,
+        agent_shape='segment',
+        agent_fill_color=None,
         phylogeny_names=True,
         skip_fields=[],
         include_fields=None,
@@ -301,6 +327,8 @@ def plot_snapshots(
     Arguments:
         data (dict): A dictionary with the following keys:
 
+            * **bounds** (:py:class:`tuple`): The dimensions of the
+              environment.
             * **agents** (:py:class:`dict`): A mapping from times to
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
@@ -309,12 +337,6 @@ def plot_snapshots(
               dictionaries of environmental field data at that
               timepoint.  Field data dictionaries should have the same
               form as the hierarchy tree rooted at ``fields``.
-            * **config** (:py:class:`dict`): The environmental
-              configuration dictionary which is passed to
-
-        plot_config (dict): Accepts the following configuration options.
-            Any options with a default is optional.
-
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **phylogeny_names** (:py:class:`bool`): This selects agent
@@ -325,6 +347,15 @@ def plot_snapshots(
               ``include_fields``.
             * **include_fields** (:py:class:`Iterable`): Keys of fields
               to plot.
+            * **snapshot_times** (:py:class:`Iterable`): Times to plot
+              snapshots for. Defaults to None, in which case n_snapshots
+              is used.
+            * **agent_shape** (:py:class:`str`): the shape of the agents.
+              select from **rectangle**, **segment**, **circle**
+            * **out_dir** (:py:class:`str`): Output directory, which is
+              ``out`` by default.
+            * **filename** (:py:class:`str`): Base name of output file.
+              ``snapshots`` by default.
     '''
 
     # time steps that will be used
@@ -342,11 +373,16 @@ def plot_snapshots(
     field_range = get_field_range(fields, time_vec, include_fields, skip_fields)
 
     # get agent ids
-    agent_colors = get_agent_colors(agents, phylogeny_names)
+    agent_colors = get_agent_colors(agents, phylogeny_names, agent_fill_color)
 
     # get time data
-    time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
-    snapshot_times = [time_vec[i] for i in time_indices]
+    if snapshot_times:
+        n_snapshots = len(snapshot_times)
+        time_indices = [
+            time_vec.index(time) for time in snapshot_times]
+    else:
+        time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
+        snapshot_times = [time_vec[i] for i in time_indices]
 
     return make_snapshots_figure(
         agents=agents,
@@ -355,11 +391,43 @@ def plot_snapshots(
         field_range=field_range,
         n_snapshots=n_snapshots,
         time_indices=time_indices,
+        agent_shape=agent_shape,
         snapshot_times=snapshot_times,
         bounds=bounds,
         out_dir=out_dir,
         filename=filename,
     )
+
+
+def add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times):
+    # Add time axis across subplots
+    super_spec = matplotlib.gridspec.SubplotSpec(
+        grid,
+        (n_rows - 1) * n_cols,
+        (n_rows - 1) * n_cols + n_snapshots - 1,
+    )
+    grid_params = grid.get_subplot_params()
+    if n_snapshots > 1:
+        time_per_snapshot = (
+            snapshot_times[-1] - snapshot_times[0]) / (
+            (n_snapshots - 1) * (grid_params.wspace + 1))
+    else:
+        time_per_snapshot = 1  # Arbitrary
+    super_ax = fig.add_subplot(  # type: ignore
+        super_spec,
+        xticks=snapshot_times,
+        xlim=(
+            snapshot_times[0] - time_per_snapshot / 2,
+            snapshot_times[-1] + time_per_snapshot / 2,
+        ),
+        yticks=[],
+    )
+    super_ax.set_xlabel(  # type: ignore
+        'Time (s)', labelpad=50)
+    super_ax.xaxis.set_tick_params(width=2, length=8)
+    for spine_name in ('top', 'right', 'left'):
+        super_ax.spines[spine_name].set_visible(False)
+    super_ax.spines['bottom'].set_linewidth(2)
 
 
 def make_snapshots_figure(
@@ -372,11 +440,19 @@ def make_snapshots_figure(
     plot_width=12,
     field_range=None,
     agent_colors=None,
-    field_colormap='gist_yarg',
     dead_color=[0, 0, 0],
+    membrane_width=0.1,
+    membrane_color=[1, 1, 1],
     default_font_size=36,
-    field_label_size=20,
+    field_label_size=32,
     agent_shape='segment',
+    agent_alpha=1,
+    scale_bar_length=1,
+    scale_bar_color='black',
+    xlim=None,
+    ylim=None,
+    min_color='white',
+    max_color='gray',
     out_dir=None,
     filename='snapshots',
 ):
@@ -393,6 +469,20 @@ def make_snapshots_figure(
           titles and axis labels.
         * **agent_shape** (:py:class:`str`): the shape of the agents.
           select from **rectangle**, **segment**
+        * **agent_alpha** (:py:class:`float`): Alpha for agent
+          plots.
+        * **scale_bar_length** (:py:class:`float`): Length of scale
+          bar.  Defaults to 1 (in units of micrometers). If 0, no
+          bar plotted.
+        * **scale_bar_color** (:py:class:`str`): Color of scale bar
+        * **xlim** (:py:class:`tuple` of :py:class:`float`): Tuple
+           of lower and upper x-axis limits.
+        * **ylim** (:py:class:`tuple` of :py:class:`float`): Tuple
+           of lower and upper y-axis limits.
+        * **min_color** (any valid matplotlib color): Color for
+          minimum field values.
+        * **max_color** (any valid matplotlib color): Color for
+          maximum field values.
         * **out_dir** (:py:class:`str`): Output directory, which is
           ``out`` by default.
         * **filename** (:py:class:`str`): Base name of output file.
@@ -412,16 +502,45 @@ def make_snapshots_figure(
     original_fontsize = plt.rcParams['font.size']
     plt.rcParams.update({'font.size': default_font_size})
 
+    # Add time axis across subplots
+    add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
+
+    # Make the colormap
+    min_rgb = matplotlib.colors.to_rgb(min_color)
+    max_rgb = matplotlib.colors.to_rgb(max_color)
+    colors_dict = {
+        'red': [
+            [0, min_rgb[0], min_rgb[0]],
+            [1, max_rgb[0], max_rgb[0]],
+        ],
+        'green': [
+            [0, min_rgb[1], min_rgb[1]],
+            [1, max_rgb[1], max_rgb[1]],
+        ],
+        'blue': [
+            [0, min_rgb[2], min_rgb[2]],
+            [1, max_rgb[2], max_rgb[2]],
+        ],
+    }
+    cmap = matplotlib.colors.LinearSegmentedColormap(
+        'field', segmentdata=colors_dict, N=512)
+
+    stats = {
+        'agents': {},
+    }
+    if field_ids:
+        stats['fields'] = {
+            field_id: {} for field_id in field_ids
+        }
     # plot snapshot data in each subsequent column
     for col_idx, (time_idx, time) in enumerate(zip(time_indices, snapshot_times)):
-
+        stats['agents'][time] = len(agents[time])
         if field_ids:
             for row_idx, field_id in enumerate(field_ids):
 
                 ax = init_axes(
                     fig, edge_length_x, edge_length_y, grid, row_idx,
                     col_idx, time, field_id, field_label_size,
-                    title_size=default_font_size,
                 )
                 ax.tick_params(
                     axis='both', which='both', bottom=False, top=False,
@@ -429,43 +548,84 @@ def make_snapshots_figure(
                 )
 
                 # transpose field to align with agents
-                field = np.transpose(np.array(fields[time][field_id])).tolist()
+                field = np.transpose(np.array(fields[time][field_id]))
                 vmin, vmax = field_range[field_id]
-                im = plt.imshow(field,
+                q1, q2, q3 = np.percentile(field, [25, 50, 75])
+                stats['fields'][field_id][time] = (
+                    field.min(), q1, q2, q3, field.max())
+                im = plt.imshow(field.tolist(),
                                 origin='lower',
                                 extent=[0, edge_length_x, 0, edge_length_y],
                                 vmin=vmin,
                                 vmax=vmax,
-                                cmap=field_colormap)
+                                cmap=cmap)
                 if agents:
                     agents_now = agents[time]
                     plot_agents(
-                        ax, agents_now, agent_colors, agent_shape, dead_color)
+                        ax,
+                        agents_now,
+                        agent_colors,
+                        agent_shape='segment',
+                        dead_color=None,
+                        membrane_width=membrane_width,
+                        membrane_color=membrane_color,
+                        alpha=agent_alpha)
+                if xlim:
+                    ax.set_xlim(*xlim)
+                if ylim:
+                    ax.set_ylim(*ylim)
 
                 # colorbar in new column after final snapshot
                 if col_idx == n_snapshots - 1:
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     if row_idx == 0:
-                        ax.set_title('Concentration (mmol/L)', y=1.08)
+                        ax.set_title('Concentration (mM)', y=1.08)
                     ax.axis('off')
                     if vmin == vmax:
                         continue
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("left", size="5%", pad=0.0)
-                    fig.colorbar(im, cax=cax, format='%.2f')
+                    fig.colorbar(im, cax=cax, format='%.3f')
                     ax.axis('off')
+                # Scale bar in first snapshot of each row
+                if col_idx == 0 and scale_bar_length:
+                    scale_bar = anchored_artists.AnchoredSizeBar(
+                        ax.transData, scale_bar_length,
+                        f'${scale_bar_length} \mu m$', 'lower left',
+                        color=scale_bar_color,
+                        frameon=False,
+                        sep=scale_bar_length,
+                        size_vertical = scale_bar_length / 20,
+                    )
+                    ax.add_artist(scale_bar)
         else:
             row_idx = 0
             ax = init_axes(
                 fig, bounds[0], bounds[1], grid, row_idx, col_idx,
-                time, "",
-                title_size=default_font_size
+                time, ""
             )
 
             if agents:
                 agents_now = agents[time]
-                plot_agents(ax, agents_now, agent_colors, agent_shape, dead_color)
+                plot_agents(
+                    ax, agents_now, agent_colors, agent_shape,
+                    dead_color, agent_alpha)
+            if xlim:
+                ax.set_xlim(*xlim)
+            if ylim:
+                ax.set_ylim(*ylim)
+            # Scale bar in first snapshot of each row
+            if col_idx == 0 and scale_bar_length:
+                scale_bar = anchored_artists.AnchoredSizeBar(
+                    ax.transData, scale_bar_length,
+                    f'${scale_bar_length} \\mu m$', 'lower left',
+                    color=scale_bar_color,
+                    frameon=False,
+                    sep=scale_bar_length,
+                    size_vertical=scale_bar_length / 20,
+                )
+                ax.add_artist(scale_bar)
 
     plt.rcParams.update({'font.size': original_fontsize})
     if out_dir:
