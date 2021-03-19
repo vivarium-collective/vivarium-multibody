@@ -311,13 +311,13 @@ def plot_snapshots(
         fields={},
         n_snapshots=6,
         snapshot_times=None,
-        agent_shape='segment',
         agent_fill_color=None,
         phylogeny_names=True,
         skip_fields=[],
         include_fields=None,
         out_dir=None,
         filename=None,
+        **kwargs,
 ):
     '''Plot snapshots of the simulation over time
 
@@ -350,8 +350,6 @@ def plot_snapshots(
             * **snapshot_times** (:py:class:`Iterable`): Times to plot
               snapshots for. Defaults to None, in which case n_snapshots
               is used.
-            * **agent_shape** (:py:class:`str`): the shape of the agents.
-              select from **rectangle**, **segment**, **circle**
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
@@ -391,12 +389,35 @@ def plot_snapshots(
         field_range=field_range,
         n_snapshots=n_snapshots,
         time_indices=time_indices,
-        agent_shape=agent_shape,
         snapshot_times=snapshot_times,
         bounds=bounds,
         out_dir=out_dir,
         filename=filename,
+        **kwargs,
     )
+
+
+def plot_tags(
+        data,
+        **kwargs,
+        # bounds,
+        # agents={},
+        # fields={},
+        # n_snapshots=6,
+        # snapshot_times=None,
+        # agent_fill_color=None,
+        # phylogeny_names=True,
+        # skip_fields=[],
+        # include_fields=None,
+        # out_dir=None,
+        # filename=None,
+        # **kwargs,
+):
+
+
+    return make_tags_figure(
+        data,
+        **kwargs)
 
 
 def add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times):
@@ -447,6 +468,7 @@ def make_snapshots_figure(
     field_label_size=32,
     agent_shape='segment',
     agent_alpha=1,
+    show_timeline=True,
     scale_bar_length=1,
     scale_bar_color='black',
     xlim=None,
@@ -503,7 +525,8 @@ def make_snapshots_figure(
     plt.rcParams.update({'font.size': default_font_size})
 
     # Add time axis across subplots
-    add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
+    if show_timeline:
+        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
 
     # Make the colormap
     min_rgb = matplotlib.colors.to_rgb(min_color)
@@ -635,7 +658,22 @@ def make_snapshots_figure(
     return fig
 
 
-def plot_tags(data, plot_config):
+def make_tags_figure(
+        data,
+        n_snapshots=plot_config.get('n_snapshots', 6),
+        out_dir = plot_config.get('out_dir', False),
+        filename = plot_config.get('filename', 'tags'),
+        agent_shape = plot_config.get('agent_shape', 'segment'),
+        background_color = plot_config.get('background_color', 'black'),
+        tagged_molecules = plot_config['tagged_molecules'],
+        tag_path_name_map = plot_config.get('tag_path_name_map', {}),
+        tag_label_size = plot_config.get('tag_label_size', 20),
+        default_font_size = plot_config.get('default_font_size', 36),
+        convert_to_concs = plot_config.get('convert_to_concs', True),
+        membrane_width = plot_config.get('membrane_width', 0.1),
+        membrane_color = plot_config.get('membrane_color', [1, 1, 1]),
+        tag_colors = plot_config.get('tag_colors', dict()),
+):
     '''Plot snapshots of the simulation over time
 
     The snapshots depict the agents and the levels of tagged molecules
@@ -684,7 +722,6 @@ def plot_tags(data, plot_config):
             * **tag_colors** (:py:class:`dict`): Mapping from tag ID to
                 the HSV color to use for that tag as a list.
     '''
-    check_plt_backend()
 
     n_snapshots = plot_config.get('n_snapshots', 6)
     out_dir = plot_config.get('out_dir', False)
