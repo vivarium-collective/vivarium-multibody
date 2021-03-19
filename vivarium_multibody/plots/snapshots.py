@@ -462,29 +462,6 @@ def plot_snapshots(
     )
 
 
-def plot_tags(
-        data,
-        **kwargs,
-        # bounds,
-        # agents={},
-        # fields={},
-        # n_snapshots=6,
-        # snapshot_times=None,
-        # agent_fill_color=None,
-        # phylogeny_names=True,
-        # skip_fields=[],
-        # include_fields=None,
-        # out_dir=None,
-        # filename=None,
-        # **kwargs,
-):
-
-    return make_tags_figure(
-        data,
-        **kwargs)
-
-
-
 def make_snapshots_figure(
     agents,
     fields,
@@ -692,21 +669,58 @@ def make_snapshots_figure(
     return fig
 
 
-def make_tags_figure(
+
+def plot_tags(
         data,
-        n_snapshots=plot_config.get('n_snapshots', 6),
-        out_dir = plot_config.get('out_dir', False),
-        filename = plot_config.get('filename', 'tags'),
-        agent_shape = plot_config.get('agent_shape', 'segment'),
-        background_color = plot_config.get('background_color', 'black'),
-        tagged_molecules = plot_config['tagged_molecules'],
-        tag_path_name_map = plot_config.get('tag_path_name_map', {}),
-        tag_label_size = plot_config.get('tag_label_size', 20),
-        default_font_size = plot_config.get('default_font_size', 36),
-        convert_to_concs = plot_config.get('convert_to_concs', True),
-        membrane_width = plot_config.get('membrane_width', 0.1),
-        membrane_color = plot_config.get('membrane_color', [1, 1, 1]),
-        tag_colors = plot_config.get('tag_colors', dict()),
+        snapshot_times=None,
+        n_snapshots=6,
+        **kwargs,
+):
+    agents, fields = format_snapshot_data(data)
+
+    time_vec = list(agents.keys())
+
+    # get time data
+    if snapshot_times:
+        n_snapshots = len(snapshot_times)
+        time_indices = [
+            time_vec.index(time) for time in snapshot_times]
+    else:
+        time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
+        snapshot_times = [time_vec[i] for i in time_indices]
+
+    return make_tags_figure(
+        agents=agents,
+        n_snapshots=n_snapshots,
+        time_indices=time_indices,
+        snapshot_times=snapshot_times,
+        **kwargs,
+        # agent_colors=agent_colors,
+        # bounds=bounds,
+        # out_dir=out_dir,
+        # filename=filename,
+    )
+
+
+
+def make_tags_figure(
+        agents,
+        bounds,
+        time_indices,
+        snapshot_times,
+        n_snapshots=6,
+        tagged_molecules=None,
+        out_dir=False,
+        filename='tags',
+        agent_shape='segment',
+        background_color='black',
+        tag_path_name_map=None,
+        tag_label_size=20,
+        default_font_size=36,
+        convert_to_concs=True,
+        membrane_width=0.1,
+        membrane_color=None,
+        tag_colors=None,
 ):
     '''Plot snapshots of the simulation over time
 
@@ -720,15 +734,6 @@ def make_tags_figure(
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
               tree rooted at ``agents``.
-            * **config** (:py:class:`dict`): The environmental
-              configuration dictionary  with the following keys:
-
-                * **bounds** (:py:class:`tuple`): The dimensions of the
-                  environment.
-
-        plot_config (dict): Accepts the following configuration options.
-            Any options with a default is optional.
-
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
@@ -757,35 +762,29 @@ def make_tags_figure(
                 the HSV color to use for that tag as a list.
     '''
 
-    n_snapshots = plot_config.get('n_snapshots', 6)
-    out_dir = plot_config.get('out_dir', False)
-    filename = plot_config.get('filename', 'tags')
-    agent_shape = plot_config.get('agent_shape', 'segment')
-    background_color = plot_config.get('background_color', 'black')
-    tagged_molecules = plot_config['tagged_molecules']
-    tag_path_name_map = plot_config.get('tag_path_name_map', {})
-    tag_label_size = plot_config.get('tag_label_size', 20)
-    default_font_size = plot_config.get('default_font_size', 36)
-    convert_to_concs = plot_config.get('convert_to_concs', True)
-    membrane_width = plot_config.get('membrane_width', 0.1)
-    membrane_color = plot_config.get('membrane_color', [1, 1, 1])
-    tag_colors = plot_config.get('tag_colors', dict())
-
+    if membrane_color is None:
+        membrane_color = [1, 1, 1]
+    if tag_colors is None:
+        tag_colors = {}
+    if tag_path_name_map is None:
+        tag_path_name_map = {}
+    if tagged_molecules is None:
+        tagged_molecules = []
     if tagged_molecules == []:
         raise ValueError('At least one molecule must be tagged.')
 
     # get data
-    agents = data['agents']
-    config = data.get('config', {})
-    bounds = config['bounds']
+    # agents = data['agents']
+    # config = data.get('config', {})
+    # bounds = config['bounds']
     edge_length_x, edge_length_y = bounds
 
-    # time steps that will be used
-    time_vec = list(agents.keys())
-    time_indices = np.round(
-        np.linspace(0, len(time_vec) - 1, n_snapshots)
-    ).astype(int)
-    snapshot_times = [time_vec[i] for i in time_indices]
+    # # time steps that will be used
+    # time_vec = list(agents.keys())
+    # time_indices = np.round(
+    #     np.linspace(0, len(time_vec) - 1, n_snapshots)
+    # ).astype(int)
+    # snapshot_times = [time_vec[i] for i in time_indices]
 
     # get tag ids and range
     tag_ranges = {}
