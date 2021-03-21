@@ -374,7 +374,7 @@ def plot_snapshots(
         bounds,
         agents={},
         fields={},
-        n_snapshots=6,
+        n_snapshots=5,
         snapshot_times=None,
         agent_fill_color=None,
         phylogeny_names=True,
@@ -674,7 +674,7 @@ def plot_tags(
         data,
         bounds,
         snapshot_times=None,
-        n_snapshots=6,
+        n_snapshots=5,
         **kwargs,
 ):
     agents, fields = format_snapshot_data(data)

@@ -11,7 +11,7 @@ from vivarium.library.units import units
 
 # processes
 from vivarium_multibody.processes.multibody_physics import (
-    Multibody,
+    Multibody, make_random_position
 )
 from vivarium_multibody.processes.diffusion_field import (
     DiffusionField,
@@ -138,9 +138,10 @@ def test_lattice(
         total_time=1000,
         lattice_config=None,
 ):
+    bounds = [25, 25]
     external_molecule = 'glucose'
     lattice_config_kwargs = lattice_config or {
-        'bounds': [25, 25],
+        'bounds': bounds,
         'concentrations': {external_molecule: 1.0}}
 
     # configure the compartment
@@ -160,10 +161,10 @@ def test_lattice(
                         'agent_id': agent_id,
                         'growth': {
                             'growth_rate': 0.05,  # 0.006 very fast growth
-                            'default_growth_noise': 1e-3,
+                            'default_growth_noise': 1e-4,
                         },
                         'divide_condition': {
-                            'threshold': 3000 * units.fg
+                            'threshold': 2500 * units.fg
                         },
                         'exchange': {
                             'molecules': [external_molecule]
@@ -177,7 +178,9 @@ def test_lattice(
     initial_state = {
         'agents': {
             agent_id: {
-                'boundary': {'mass': 1500 * units.fg}
+                'boundary': {
+                    'location': make_random_position(bounds),
+                    'mass': 1500 * units.fg}
             } for agent_id in agent_ids
         }}
     experiment_settings = {
@@ -197,31 +200,32 @@ def main():
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     os.makedirs(out_dir, exist_ok=True)
 
-    bounds = [15, 15]
-    n_bins = [15, 15]
-    depth = 10
+    bounds = [30, 30]
+    n_bins = [20, 20]
+    depth = 2
 
     # run the simulation
     data = test_lattice(
-        n_agents=1,
-        total_time=2000,
+        n_agents=3,
+        total_time=4000,
         lattice_config={
             'bounds': bounds,
             'n_bins': n_bins,
             'depth': depth,
-            'diffusion': 1e-2,
-            # 'random_fields': True,
+            'diffusion': 1e-2,  # 5e-1,
+            'time_step': 60,
+            'jitter_force': 1e-5,
             'concentrations': {
                 'glucose': 1.0}})
 
-    plot_settings = {}
-    plot_agents_multigen(
-        data, plot_settings, out_dir, 'lattice_multigen')
-
     agents, fields = format_snapshot_data(data)
     plot_snapshots(
-        bounds, agents=agents, fields=fields,
-        out_dir=out_dir, filename='lattice_snapshots')
+        bounds,
+        agents=agents,
+        fields=fields,
+        n_snapshots=4,
+        out_dir=out_dir,
+        filename='lattice_snapshots')
 
 
 if __name__ == '__main__':
