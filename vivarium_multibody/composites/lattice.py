@@ -207,7 +207,7 @@ def main():
     # run the simulation
     data = test_lattice(
         n_agents=3,
-        total_time=4000,
+        total_time=2000,
         lattice_config={
             'bounds': bounds,
             'n_bins': n_bins,
