@@ -705,6 +705,8 @@ def make_tags_figure(
         time_indices,
         snapshot_times,
         n_snapshots=6,
+        scale_bar_length=1,
+        scale_bar_color='black',
         show_timeline=True,
         tagged_molecules=None,
         out_dir=False,
@@ -879,6 +881,18 @@ def make_tags_figure(
                 )
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
                 fig.colorbar(mappable, cax=cax, format='%.2f')
+
+            # Scale bar in first snapshot of each row
+            if col_idx == 0 and scale_bar_length:
+                scale_bar = anchored_artists.AnchoredSizeBar(
+                    ax.transData, scale_bar_length,
+                    f'${scale_bar_length} \\mu m$', 'lower left',
+                    color=scale_bar_color,
+                    frameon=False,
+                    sep=scale_bar_length,
+                    size_vertical=scale_bar_length / 20,
+                )
+                ax.add_artist(scale_bar)
 
     plt.rcParams.update({'font.size': original_fontsize})
     if out_dir:
