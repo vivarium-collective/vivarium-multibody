@@ -672,12 +672,12 @@ def make_snapshots_figure(
 
 def plot_tags(
         data,
+        bounds,
         snapshot_times=None,
         n_snapshots=6,
         **kwargs,
 ):
     agents, fields = format_snapshot_data(data)
-
     time_vec = list(agents.keys())
 
     # get time data
@@ -691,16 +691,12 @@ def plot_tags(
 
     return make_tags_figure(
         agents=agents,
+        bounds=bounds,
         n_snapshots=n_snapshots,
         time_indices=time_indices,
         snapshot_times=snapshot_times,
         **kwargs,
-        # agent_colors=agent_colors,
-        # bounds=bounds,
-        # out_dir=out_dir,
-        # filename=filename,
     )
-
 
 
 def make_tags_figure(
@@ -709,6 +705,7 @@ def make_tags_figure(
         time_indices,
         snapshot_times,
         n_snapshots=6,
+        show_timeline=True,
         tagged_molecules=None,
         out_dir=False,
         filename='tags',
@@ -774,17 +771,7 @@ def make_tags_figure(
         raise ValueError('At least one molecule must be tagged.')
 
     # get data
-    # agents = data['agents']
-    # config = data.get('config', {})
-    # bounds = config['bounds']
     edge_length_x, edge_length_y = bounds
-
-    # # time steps that will be used
-    # time_vec = list(agents.keys())
-    # time_indices = np.round(
-    #     np.linspace(0, len(time_vec) - 1, n_snapshots)
-    # ).astype(int)
-    # snapshot_times = [time_vec[i] for i in time_indices]
 
     # get tag ids and range
     tag_ranges = {}
@@ -819,6 +806,10 @@ def make_tags_figure(
     grid = plt.GridSpec(n_rows, n_cols, wspace=0.2, hspace=0.2)
     original_fontsize = plt.rcParams['font.size']
     plt.rcParams.update({'font.size': default_font_size})
+
+    # Add time axis across subplots
+    if show_timeline:
+        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
 
     # plot tags
     for row_idx, tag_id in enumerate(tag_ranges.keys()):
