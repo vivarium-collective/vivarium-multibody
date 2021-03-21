@@ -6,16 +6,13 @@ import itertools
 import matplotlib
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
-import matplotlib.lines as mlines
 from matplotlib.lines import Line2D
 from matplotlib.colors import hsv_to_rgb
 from mpl_toolkits.axes_grid1 import (
     make_axes_locatable, anchored_artists)
-from matplotlib.collections import LineCollection
 import numpy as np
 
 from vivarium.library.dict_utils import get_value_from_path
-
 
 DEFAULT_BOUNDS = [10, 10]
 
@@ -29,11 +26,6 @@ DEFAULT_SV = [100.0/100.0, 70.0/100.0]
 BASELINE_TAG_COLOR = [0, 0, 1]  # HSV
 FLOURESCENT_SV = [0.75, 1.0]  # SV for fluorescent colors
 
-def check_plt_backend():
-    # reset matplotlib backend for non-interactive plotting
-    plt.close('all')
-    if plt.get_backend() == 'TkAgg':
-        matplotlib.use('Agg')
 
 class LineWidthData(Line2D):
     def __init__(self, *args, **kwargs):
@@ -53,6 +45,73 @@ class LineWidthData(Line2D):
         self._lw_data = lw
 
     _linewidth = property(_get_lw, _set_lw)
+
+
+def init_axes(
+    fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time,
+    molecule, ylabel_size=20, title_size=12,
+):
+    ax = fig.add_subplot(grid[row_idx, col_idx])
+    if row_idx == 0:
+        plot_title = 'time: {:.4f} s'.format(float(time))
+        plt.title(plot_title, y=1.08, fontsize=title_size)
+    if col_idx == 0:
+        ax.set_ylabel(
+            molecule, fontsize=ylabel_size, rotation='horizontal',
+            horizontalalignment='right',
+        )
+    ax.set(xlim=[0, edge_length_x], ylim=[0, edge_length_y], aspect=1)
+    ax.set_yticklabels([])
+    ax.set_xticklabels([])
+    return ax
+
+
+def add_time_axis(
+        fig, grid, n_rows, n_cols, n_snapshots, snapshot_times):
+    # Add time axis across subplots
+    super_spec = matplotlib.gridspec.SubplotSpec(
+        grid,
+        (n_rows - 1) * n_cols,
+        (n_rows - 1) * n_cols + n_snapshots - 1,
+    )
+    grid_params = grid.get_subplot_params()
+    if n_snapshots > 1:
+        time_per_snapshot = (
+            snapshot_times[-1] - snapshot_times[0]) / (
+            (n_snapshots - 1) * (grid_params.wspace + 1))
+    else:
+        time_per_snapshot = 1  # Arbitrary
+    super_ax = fig.add_subplot(  # type: ignore
+        super_spec,
+        xticks=snapshot_times,
+        xlim=(
+            snapshot_times[0] - time_per_snapshot / 2,
+            snapshot_times[-1] + time_per_snapshot / 2,
+        ),
+        yticks=[],
+    )
+    super_ax.set_xlabel(  # type: ignore
+        'Time (s)', labelpad=50)
+    super_ax.xaxis.set_tick_params(width=2, length=8)
+    for spine_name in ('top', 'right', 'left'):
+        super_ax.spines[spine_name].set_visible(False)
+    super_ax.spines['bottom'].set_linewidth(2)
+
+
+def mutate_color(baseline_hsv):
+    mutation = 0.1
+    new_hsv = [
+        (n + np.random.uniform(-mutation, mutation))
+        for n in baseline_hsv]
+    # wrap hue around
+    new_hsv[0] = new_hsv[0] % 1
+    # reflect saturation and value
+    if new_hsv[1] > 1:
+        new_hsv[1] = 2 - new_hsv[1]
+    if new_hsv[2] > 1:
+        new_hsv[2] = 2 - new_hsv[2]
+    return new_hsv
+
 
 def plot_agent(
         ax,
@@ -158,6 +217,7 @@ def plot_agent(
         )
         ax.add_patch(circle)
 
+
 def plot_agents(
         ax,
         agents,
@@ -200,21 +260,13 @@ def plot_agents(
     else:
         ax.set_title(f'{len(agents)} agents', y=1.1)
 
-def mutate_color(baseline_hsv):
-    mutation = 0.1
-    new_hsv = [
-        (n + np.random.uniform(-mutation, mutation))
-        for n in baseline_hsv]
-    # wrap hue around
-    new_hsv[0] = new_hsv[0] % 1
-    # reflect saturation and value
-    if new_hsv[1] > 1:
-        new_hsv[1] = 2 - new_hsv[1]
-    if new_hsv[2] > 1:
-        new_hsv[2] = 2 - new_hsv[2]
-    return new_hsv
 
-def color_phylogeny(ancestor_id, phylogeny, baseline_hsv, phylogeny_colors={}):
+def color_phylogeny(
+        ancestor_id,
+        phylogeny,
+        baseline_hsv,
+        phylogeny_colors={}
+):
     """
     get colors for all descendants of the ancestor
     through recursive calls to each generation
@@ -226,6 +278,7 @@ def color_phylogeny(ancestor_id, phylogeny, baseline_hsv, phylogeny_colors={}):
             daughter_color = mutate_color(baseline_hsv)
             color_phylogeny(daughter_id, phylogeny, daughter_color)
     return phylogeny_colors
+
 
 def get_phylogeny_colors_from_names(agent_ids):
     '''Get agent colors using phlogeny saved in agent_ids
@@ -265,8 +318,12 @@ def format_snapshot_data(data):
     return agents, fields
 
 
-
-def get_field_range(fields, time_vec, include_fields=None, skip_fields=[]):
+def get_field_range(
+        fields,
+        time_vec,
+        include_fields=None,
+        skip_fields=[],
+):
     field_range = {}
     if fields:
         if include_fields is None:
@@ -276,13 +333,21 @@ def get_field_range(fields, time_vec, include_fields=None, skip_fields=[]):
 
         field_ids -= set(skip_fields)
         for field_id in field_ids:
-            field_min = min([min(min(field_data[field_id])) for t, field_data in fields.items()])
-            field_max = max([max(max(field_data[field_id])) for t, field_data in fields.items()])
+            field_min = min([min(min(
+                field_data[field_id]))
+                for t, field_data in fields.items()])
+            field_max = max([max(max(
+                field_data[field_id]))
+                for t, field_data in fields.items()])
             field_range[field_id] = [field_min, field_max]
     return field_range
 
 
-def get_agent_colors(agents, phylogeny_names=True, agent_fill_color=None):
+def get_agent_colors(
+        agents,
+        phylogeny_names=True,
+        agent_fill_color=None,
+):
     agent_ids = set()
     if agents:
         for time, time_data in agents.items():
@@ -309,15 +374,15 @@ def plot_snapshots(
         bounds,
         agents={},
         fields={},
-        n_snapshots=6,
+        n_snapshots=5,
         snapshot_times=None,
-        agent_shape='segment',
         agent_fill_color=None,
         phylogeny_names=True,
         skip_fields=[],
         include_fields=None,
         out_dir=None,
         filename=None,
+        **kwargs,
 ):
     '''Plot snapshots of the simulation over time
 
@@ -350,8 +415,6 @@ def plot_snapshots(
             * **snapshot_times** (:py:class:`Iterable`): Times to plot
               snapshots for. Defaults to None, in which case n_snapshots
               is used.
-            * **agent_shape** (:py:class:`str`): the shape of the agents.
-              select from **rectangle**, **segment**, **circle**
             * **out_dir** (:py:class:`str`): Output directory, which is
               ``out`` by default.
             * **filename** (:py:class:`str`): Base name of output file.
@@ -391,43 +454,12 @@ def plot_snapshots(
         field_range=field_range,
         n_snapshots=n_snapshots,
         time_indices=time_indices,
-        agent_shape=agent_shape,
         snapshot_times=snapshot_times,
         bounds=bounds,
         out_dir=out_dir,
         filename=filename,
+        **kwargs,
     )
-
-
-def add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times):
-    # Add time axis across subplots
-    super_spec = matplotlib.gridspec.SubplotSpec(
-        grid,
-        (n_rows - 1) * n_cols,
-        (n_rows - 1) * n_cols + n_snapshots - 1,
-    )
-    grid_params = grid.get_subplot_params()
-    if n_snapshots > 1:
-        time_per_snapshot = (
-            snapshot_times[-1] - snapshot_times[0]) / (
-            (n_snapshots - 1) * (grid_params.wspace + 1))
-    else:
-        time_per_snapshot = 1  # Arbitrary
-    super_ax = fig.add_subplot(  # type: ignore
-        super_spec,
-        xticks=snapshot_times,
-        xlim=(
-            snapshot_times[0] - time_per_snapshot / 2,
-            snapshot_times[-1] + time_per_snapshot / 2,
-        ),
-        yticks=[],
-    )
-    super_ax.set_xlabel(  # type: ignore
-        'Time (s)', labelpad=50)
-    super_ax.xaxis.set_tick_params(width=2, length=8)
-    for spine_name in ('top', 'right', 'left'):
-        super_ax.spines[spine_name].set_visible(False)
-    super_ax.spines['bottom'].set_linewidth(2)
 
 
 def make_snapshots_figure(
@@ -447,6 +479,7 @@ def make_snapshots_figure(
     field_label_size=32,
     agent_shape='segment',
     agent_alpha=1,
+    show_timeline=True,
     scale_bar_length=1,
     scale_bar_color='black',
     xlim=None,
@@ -503,7 +536,8 @@ def make_snapshots_figure(
     plt.rcParams.update({'font.size': default_font_size})
 
     # Add time axis across subplots
-    add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
+    if show_timeline:
+        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
 
     # Make the colormap
     min_rgb = matplotlib.colors.to_rgb(min_color)
@@ -635,7 +669,58 @@ def make_snapshots_figure(
     return fig
 
 
-def plot_tags(data, plot_config):
+
+def plot_tags(
+        data,
+        bounds,
+        snapshot_times=None,
+        n_snapshots=5,
+        **kwargs,
+):
+    agents, fields = format_snapshot_data(data)
+    time_vec = list(agents.keys())
+
+    # get time data
+    if snapshot_times:
+        n_snapshots = len(snapshot_times)
+        time_indices = [
+            time_vec.index(time) for time in snapshot_times]
+    else:
+        time_indices = np.round(np.linspace(0, len(time_vec) - 1, n_snapshots)).astype(int)
+        snapshot_times = [time_vec[i] for i in time_indices]
+
+    return make_tags_figure(
+        agents=agents,
+        bounds=bounds,
+        n_snapshots=n_snapshots,
+        time_indices=time_indices,
+        snapshot_times=snapshot_times,
+        **kwargs,
+    )
+
+
+def make_tags_figure(
+        agents,
+        bounds,
+        time_indices,
+        snapshot_times,
+        n_snapshots=6,
+        scale_bar_length=1,
+        scale_bar_color='black',
+        show_timeline=True,
+        tagged_molecules=None,
+        out_dir=False,
+        filename='tags',
+        agent_shape='segment',
+        background_color='black',
+        tag_path_name_map=None,
+        tag_label_size=20,
+        default_font_size=36,
+        convert_to_concs=True,
+        membrane_width=0.1,
+        membrane_color=None,
+        tag_colors=None,
+):
     '''Plot snapshots of the simulation over time
 
     The snapshots depict the agents and the levels of tagged molecules
@@ -648,15 +733,6 @@ def plot_tags(data, plot_config):
               dictionaries of agent data at that timepoint. Agent data
               dictionaries should have the same form as the hierarchy
               tree rooted at ``agents``.
-            * **config** (:py:class:`dict`): The environmental
-              configuration dictionary  with the following keys:
-
-                * **bounds** (:py:class:`tuple`): The dimensions of the
-                  environment.
-
-        plot_config (dict): Accepts the following configuration options.
-            Any options with a default is optional.
-
             * **n_snapshots** (:py:class:`int`): Number of snapshots to
               show per row (i.e. for each molecule). Defaults to 6.
             * **out_dir** (:py:class:`str`): Output directory, which is
@@ -684,37 +760,20 @@ def plot_tags(data, plot_config):
             * **tag_colors** (:py:class:`dict`): Mapping from tag ID to
                 the HSV color to use for that tag as a list.
     '''
-    check_plt_backend()
 
-    n_snapshots = plot_config.get('n_snapshots', 6)
-    out_dir = plot_config.get('out_dir', False)
-    filename = plot_config.get('filename', 'tags')
-    agent_shape = plot_config.get('agent_shape', 'segment')
-    background_color = plot_config.get('background_color', 'black')
-    tagged_molecules = plot_config['tagged_molecules']
-    tag_path_name_map = plot_config.get('tag_path_name_map', {})
-    tag_label_size = plot_config.get('tag_label_size', 20)
-    default_font_size = plot_config.get('default_font_size', 36)
-    convert_to_concs = plot_config.get('convert_to_concs', True)
-    membrane_width = plot_config.get('membrane_width', 0.1)
-    membrane_color = plot_config.get('membrane_color', [1, 1, 1])
-    tag_colors = plot_config.get('tag_colors', dict())
-
+    if membrane_color is None:
+        membrane_color = [1, 1, 1]
+    if tag_colors is None:
+        tag_colors = {}
+    if tag_path_name_map is None:
+        tag_path_name_map = {}
+    if tagged_molecules is None:
+        tagged_molecules = []
     if tagged_molecules == []:
         raise ValueError('At least one molecule must be tagged.')
 
     # get data
-    agents = data['agents']
-    config = data.get('config', {})
-    bounds = config['bounds']
     edge_length_x, edge_length_y = bounds
-
-    # time steps that will be used
-    time_vec = list(agents.keys())
-    time_indices = np.round(
-        np.linspace(0, len(time_vec) - 1, n_snapshots)
-    ).astype(int)
-    snapshot_times = [time_vec[i] for i in time_indices]
 
     # get tag ids and range
     tag_ranges = {}
@@ -749,6 +808,10 @@ def plot_tags(data, plot_config):
     grid = plt.GridSpec(n_rows, n_cols, wspace=0.2, hspace=0.2)
     original_fontsize = plt.rcParams['font.size']
     plt.rcParams.update({'font.size': default_font_size})
+
+    # Add time axis across subplots
+    if show_timeline:
+        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
 
     # plot tags
     for row_idx, tag_id in enumerate(tag_ranges.keys()):
@@ -819,6 +882,18 @@ def plot_tags(data, plot_config):
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
                 fig.colorbar(mappable, cax=cax, format='%.2f')
 
+            # Scale bar in first snapshot of each row
+            if col_idx == 0 and scale_bar_length:
+                scale_bar = anchored_artists.AnchoredSizeBar(
+                    ax.transData, scale_bar_length,
+                    f'${scale_bar_length} \\mu m$', 'lower left',
+                    color=scale_bar_color,
+                    frameon=False,
+                    sep=scale_bar_length,
+                    size_vertical=scale_bar_length / 20,
+                )
+                ax.add_artist(scale_bar)
+
     plt.rcParams.update({'font.size': original_fontsize})
     if out_dir:
         fig_path = os.path.join(out_dir, filename)
@@ -828,256 +903,3 @@ def plot_tags(data, plot_config):
     else:
         return fig
 
-def initialize_spatial_figure(bounds, fontsize=18):
-
-    x_length = bounds[0]
-    y_length = bounds[1]
-
-    # set up figure
-    n_ticks = 4
-    plot_buffer = 0.02
-    buffer = plot_buffer * min(bounds)
-    min_edge = min(x_length, y_length)
-    x_scale = x_length/min_edge
-    y_scale = y_length/min_edge
-
-    # make the figure
-    fig = plt.figure(figsize=(8*x_scale, 8*y_scale))
-    plt.rcParams.update({'font.size': fontsize, "font.family": "Times New Roman"})
-
-    plt.xlim((0-buffer, x_length+buffer))
-    plt.ylim((0-buffer, y_length+buffer))
-    plt.xlabel(u'\u03bcm')
-    plt.ylabel(u'\u03bcm')
-
-    # specify the number of ticks for each edge
-    [x_bins, y_bins] = [int(n_ticks * edge / min_edge) for edge in [x_length, y_length]]
-    plt.locator_params(axis='y', nbins=y_bins)
-    plt.locator_params(axis='x', nbins=x_bins)
-    ax = plt.gca()
-
-    return fig, ax
-
-def get_agent_trajectories(agents, times):
-    trajectories = {}
-    for agent_id, series in agents.items():
-        time_indices = series['boundary']['location']['time_index']
-        series_times = [times[time_index] for time_index in time_indices]
-
-        positions = series['boundary']['location']['value']
-        angles = series['boundary']['angle']['value']
-        series_values = [[x, y, theta] for ((x, y), theta) in zip(positions, angles)]
-
-        trajectories[agent_id] = {
-            'time': series_times,
-            'value': series_values,
-        }
-    return trajectories
-
-def get_agent_type_colors(agent_ids):
-    """ get colors for each agent id by agent type
-    Assumes that agents of the same type share the beginning
-    of their name, followed by '_x' with x as a single number
-    TODO -- make this more general for more digits and other comparisons"""
-    agent_type_colors = {}
-    agent_types = {}
-    for agent1, agent2 in itertools.combinations(agent_ids, 2):
-        if agent1[0:-2] == agent2[0:-2]:
-            agent_type = agent1[0:-2]
-            if agent_type not in agent_type_colors:
-                color = plt.rcParams['axes.prop_cycle'].by_key()['color'][len(agent_type_colors)]
-                agent_type_colors[agent_type] = color
-            else:
-                color = agent_type_colors[agent_type]
-            agent_types[agent1] = agent_type
-            agent_types[agent2] = agent_type
-    for agent in agent_ids:
-        if agent not in agent_types:
-            color = plt.rcParams['axes.prop_cycle'].by_key()['color'][len(agent_type_colors)]
-            agent_type_colors[agent] = color
-            agent_types[agent] = agent
-
-    return agent_types, agent_type_colors
-
-def plot_agent_trajectory(agent_timeseries, config, out_dir='out', filename='trajectory'):
-    check_plt_backend()
-
-    # trajectory plot settings
-    legend_fontsize = 18
-    markersize = 25
-
-    bounds = config.get('bounds', DEFAULT_BOUNDS)
-    field = config.get('field')
-    rotate_90 = config.get('rotate_90', False)
-
-    # get agents
-    times = np.array(agent_timeseries['time'])
-    agents = agent_timeseries['agents']
-    agent_types, agent_type_colors = get_agent_type_colors(list(agents.keys()))
-
-    if rotate_90:
-        field = rotate_field_90(field)
-        for agent_id, series in agents.items():
-            agents[agent_id] = rotate_agent_series_90(series, bounds)
-        bounds = rotate_bounds_90(bounds)
-
-    # get each agent's trajectory
-    trajectories = get_agent_trajectories(agents, times)
-
-    # initialize a spatial figure
-    fig, ax = initialize_spatial_figure(bounds, legend_fontsize)
-
-    # move x axis to top
-    ax.tick_params(labelbottom=False,labeltop=True,bottom=False,top=True)
-    ax.xaxis.set_label_coords(0.5, 1.12)
-
-    if field is not None:
-        field = np.transpose(field)
-        shape = field.shape
-        im = plt.imshow(field,
-                        origin='lower',
-                        extent=[0, shape[1], 0, shape[0]],
-                        cmap='Greys')
-        # colorbar for field concentrations
-        cbar = plt.colorbar(im, pad=0.02, aspect=50, shrink=0.7)
-        cbar.set_label('concentration', rotation=270, labelpad=20)
-
-    for agent_id, trajectory_data in trajectories.items():
-        agent_trajectory = trajectory_data['value']
-
-        # convert trajectory to 2D array
-        locations_array = np.array(agent_trajectory)
-        x_coord = locations_array[:, 0]
-        y_coord = locations_array[:, 1]
-
-        # get agent type and color
-        agent_type = agent_types[agent_id]
-        agent_color = agent_type_colors[agent_type]
-
-        # plot line
-        ax.plot(x_coord, y_coord, linewidth=2, color=agent_color, label=agent_type)
-        ax.plot(x_coord[0], y_coord[0],
-                 color=(0.0, 0.8, 0.0), marker='.', markersize=markersize)  # starting point
-        ax.plot(x_coord[-1], y_coord[-1],
-                 color='r', marker='.', markersize=markersize)  # ending point
-
-    # create legend for agent types
-    agent_labels = [
-        mlines.Line2D([], [], color=agent_color, linewidth=2, label=agent_type)
-        for agent_type, agent_color in agent_type_colors.items()]
-    agent_legend = plt.legend(
-        title='agent type', handles=agent_labels, loc='upper center',
-        bbox_to_anchor=(0.3, 0.0), ncol=2, prop={'size': legend_fontsize})
-    ax.add_artist(agent_legend)
-
-    # create a legend for start/end markers
-    start = mlines.Line2D([], [],
-            color=(0.0, 0.8, 0.0), marker='.', markersize=markersize, linestyle='None', label='start')
-    end = mlines.Line2D([], [],
-            color='r', marker='.', markersize=markersize, linestyle='None', label='end')
-    marker_legend = plt.legend(
-        title='trajectory', handles=[start, end], loc='upper center',
-        bbox_to_anchor=(0.7, 0.0), ncol=2, prop={'size': legend_fontsize})
-    ax.add_artist(marker_legend)
-
-    fig_path = os.path.join(out_dir, filename)
-    plt.subplots_adjust(wspace=0.7, hspace=0.1)
-    plt.savefig(fig_path, bbox_inches='tight')
-    plt.close(fig)
-
-
-def rotate_bounds_90(bounds):
-    return [bounds[1], bounds[0]]
-
-def rotate_field_90(field):
-    return np.rot90(field, 3)  # rotate 3 times for 270
-
-def rotate_agent_series_90(series, bounds):
-    location_series = series['boundary']['location']
-    angle_series = series['boundary']['angle']
-
-    if isinstance(location_series, dict):
-        # this ran with time_indexed_timeseries_from_data
-        series['boundary']['location']['value'] = [[y, bounds[0] - x] for [x, y] in location_series['value']]
-        series['boundary']['angle']['value'] = [theta + PI / 2 for theta in angle_series['value']]
-    else:
-        series['boundary']['location'] = [[y, bounds[0] - x] for [x, y] in location_series]
-        series['boundary']['angle'] = [theta + PI / 2 for theta in angle_series]
-    return series
-
-def plot_temporal_trajectory(agent_timeseries, config, out_dir='out', filename='temporal'):
-    check_plt_backend()
-
-    bounds = config.get('bounds', DEFAULT_BOUNDS)
-    field = config.get('field')
-    rotate_90 = config.get('rotate_90', False)
-
-    # get agents
-    times = np.array(agent_timeseries['time'])
-    agents = agent_timeseries['agents']
-
-    if rotate_90:
-        field = rotate_field_90(field)
-        for agent_id, series in agents.items():
-            agents[agent_id] = rotate_agent_series_90(series, bounds)
-        bounds = rotate_bounds_90(bounds)
-
-    # get each agent's trajectory
-    trajectories = get_agent_trajectories(agents, times)
-
-    # initialize a spatial figure
-    fig, ax = initialize_spatial_figure(bounds)
-
-    if field is not None:
-        field = np.transpose(field)
-        shape = field.shape
-        im = plt.imshow(field,
-                        origin='lower',
-                        extent=[0, shape[1], 0, shape[0]],
-                        cmap='Greys'
-                        )
-
-    for agent_id, trajectory_data in trajectories.items():
-        agent_trajectory = trajectory_data['value']
-
-        # convert trajectory to 2D array
-        locations_array = np.array(agent_trajectory)
-        x_coord = locations_array[:, 0]
-        y_coord = locations_array[:, 1]
-
-        # make multi-colored trajectory
-        points = np.array([x_coord, y_coord]).T.reshape(-1, 1, 2)
-        segments = np.concatenate([points[:-1], points[1:]], axis=1)
-        lc = LineCollection(segments, cmap=plt.get_cmap('cool'))
-        lc.set_array(times)
-        lc.set_linewidth(6)
-
-        # plot line
-        line = plt.gca().add_collection(lc)
-
-    # color bar
-    cbar = plt.colorbar(line, ticks=[times[0], times[-1]], aspect=90, shrink=0.4)
-    cbar.set_label('time (s)', rotation=270)
-
-    fig_path = os.path.join(out_dir, filename)
-    plt.subplots_adjust(wspace=0.7, hspace=0.1)
-    plt.savefig(fig_path, bbox_inches='tight')
-    plt.close(fig)
-
-def init_axes(
-    fig, edge_length_x, edge_length_y, grid, row_idx, col_idx, time,
-    molecule, ylabel_size=20, title_size=12,
-):
-    ax = fig.add_subplot(grid[row_idx, col_idx])
-    if row_idx == 0:
-        plot_title = 'time: {:.4f} s'.format(float(time))
-        plt.title(plot_title, y=1.08, fontsize=title_size)
-    if col_idx == 0:
-        ax.set_ylabel(
-            molecule, fontsize=ylabel_size, rotation='horizontal',
-            horizontalalignment='right',
-        )
-    ax.set(xlim=[0, edge_length_x], ylim=[0, edge_length_y], aspect=1)
-    ax.set_yticklabels([])
-    ax.set_xticklabels([])
-    return ax
