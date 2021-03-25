@@ -343,18 +343,21 @@ def get_field_range(
     return field_range
 
 
+def get_agent_ids(agents):
+    agent_ids = set()
+    for time, time_data in agents.items():
+        current_agents = list(time_data.keys())
+        agent_ids.update(current_agents)
+    return list(agent_ids)
+
+
 def get_agent_colors(
         agents,
         phylogeny_names=True,
         agent_fill_color=None,
 ):
-    agent_ids = set()
+    agent_ids = get_agent_ids(agents)
     if agents:
-        for time, time_data in agents.items():
-            current_agents = list(time_data.keys())
-            agent_ids.update(current_agents)
-        agent_ids = list(agent_ids)
-
         # set agent colors
         if agent_fill_color:
             agent_colors = {
@@ -377,6 +380,7 @@ def plot_snapshots(
         n_snapshots=5,
         snapshot_times=None,
         agent_fill_color=None,
+        agent_colors=None,
         phylogeny_names=True,
         skip_fields=[],
         include_fields=None,
@@ -436,7 +440,8 @@ def plot_snapshots(
     field_range = get_field_range(fields, time_vec, include_fields, skip_fields)
 
     # get agent ids
-    agent_colors = get_agent_colors(agents, phylogeny_names, agent_fill_color)
+    if not agent_colors:
+        agent_colors = get_agent_colors(agents, phylogeny_names, agent_fill_color)
 
     # get time data
     if snapshot_times:

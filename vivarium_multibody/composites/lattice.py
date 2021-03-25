@@ -1,30 +1,27 @@
 import os
+import argparse
+import numpy as np
 
 from vivarium.core.process import Composer
+from vivarium.core.experiment import Experiment
 from vivarium.core.composition import (
-    compose_experiment,
     COMPOSITE_OUT_DIR,
-    COMPOSER_KEY
 )
 from vivarium.library.dict_utils import deep_merge
 from vivarium.library.units import units
 
 # processes
 from vivarium_multibody.processes.multibody_physics import (
-    Multibody, make_random_position
-)
+    Multibody, make_random_position)
 from vivarium_multibody.processes.diffusion_field import (
-    DiffusionField,
-)
-from vivarium_multibody.composites.grow_divide import GrowDivideExchange
-
+    DiffusionField)
+from vivarium_multibody.composites.grow_divide import (
+    GrowDivideExchange, GrowDivide)
 
 # plots
-from vivarium.plots.agents_multigen import plot_agents_multigen
 from vivarium_multibody.plots.snapshots import (
-    format_snapshot_data,
-    plot_snapshots,
-)
+    format_snapshot_data, get_agent_ids, plot_snapshots,
+    DEFAULT_SV)
 
 NAME = 'lattice_environment'
 
@@ -136,59 +133,75 @@ class Lattice(Composer):
 def test_lattice(
         n_agents=1,
         total_time=1000,
-        lattice_config=None,
+        exchange=False,
+        external_molecule='X',
+        bounds=[25, 25],
+        n_bins=None,
+        initial_field=None,
 ):
-    bounds = [25, 25]
-    external_molecule = 'glucose'
-    lattice_config_kwargs = lattice_config or {
+    # lattice configuration
+    lattice_config_kwargs = {
         'bounds': bounds,
-        'concentrations': {external_molecule: 1.0}}
-
-    # configure the compartment
+        'n_bins': n_bins or bounds,
+        'depth': 2,
+        'diffusion': 1e-3,
+        'time_step': 60,
+        'jitter_force': 1e-5,
+        'concentrations': {
+            external_molecule: 1.0}
+    }
+    if initial_field is not None:
+        lattice_config_kwargs['concentrations'] = {
+            external_molecule: initial_field}
     lattice_config = make_lattice_config(**lattice_config_kwargs)
 
-    # declare the hierarchy
-    agent_ids = [str(agent_id) for agent_id in range(n_agents)]
-    hierarchy = {
-        COMPOSER_KEY: {
-            'type': Lattice,
-            'config': lattice_config},
-        'agents': {
-            agent_id: {
-                COMPOSER_KEY: {
-                    'type': GrowDivideExchange,
-                    'config': {
-                        'agent_id': agent_id,
-                        'growth': {
-                            'growth_rate': 0.05,  # 0.006 very fast growth
-                            'default_growth_noise': 1e-4,
-                        },
-                        'divide_condition': {
-                            'threshold': 2500 * units.fg
-                        },
-                        'exchange': {
-                            'molecules': [external_molecule]
-                        },
-                        '_schema': {}
-                    }}
-            } for agent_id in agent_ids
-        }}
+    # agent configuration
+    agent_config = {
+        'growth': {
+            'growth_rate': 0.05,  # 0.006 very fast growth
+            'default_growth_noise': 5e-4},
+        'divide_condition': {
+            'threshold': 2500 * units.fg}}
+    exchange_config = {
+        'exchange': {
+            'molecules': [external_molecule]}}
 
-    # configure experiment with helper function compose_experiment()
+    # lattice composer
+    lattice_composer = Lattice(lattice_config)
+    # agent composer
+    if exchange:
+        agent_composer = GrowDivideExchange({
+            **agent_config, **exchange_config})
+    else:
+        agent_composer = GrowDivide(agent_config)
+
+    # make the composite
+    lattice_agent_composite = lattice_composer.generate()
+
+    # add agents
+    agent_ids = [str(agent_id) for agent_id in range(n_agents)]
+    for agent_id in agent_ids:
+        agent = agent_composer.generate({'agent_id': agent_id})
+        lattice_agent_composite.merge(composite=agent, path=('agents', agent_id))
+
+    # initial state
     initial_state = {
+        # 'fields': {
+        #     external_molecule: initial_field if (initial_field is not None) else np.ones((n_bins[0], n_bins[1]))},
         'agents': {
             agent_id: {
                 'boundary': {
                     'location': make_random_position(bounds),
                     'mass': 1500 * units.fg}
-            } for agent_id in agent_ids
-        }}
-    experiment_settings = {
+            } for agent_id in agent_ids}}
+
+    # make the experiment
+    experiment_config = {
+        'processes': lattice_agent_composite.processes,
+        'topology': lattice_agent_composite.topology,
         'initial_state': initial_state,
-        'experiment_id': 'spatial_environment'}
-    spatial_experiment = compose_experiment(
-        hierarchy=hierarchy,
-        settings=experiment_settings)
+        'progress_bar': True}
+    spatial_experiment = Experiment(experiment_config)
 
     # run the simulation
     spatial_experiment.update(total_time)
@@ -199,33 +212,54 @@ def test_lattice(
 def main():
     out_dir = os.path.join(COMPOSITE_OUT_DIR, NAME)
     os.makedirs(out_dir, exist_ok=True)
+    parser = argparse.ArgumentParser(description='lattice composite')
+    parser.add_argument('-exchange', '-e', action='store_true', default=False, help='simulate agents with exchange')
+    args = parser.parse_args()
 
-    bounds = [30, 30]
-    n_bins = [20, 20]
-    depth = 2
+    bounds = [25, 25]
 
-    # run the simulation
-    data = test_lattice(
-        n_agents=3,
-        total_time=2000,
-        lattice_config={
-            'bounds': bounds,
-            'n_bins': n_bins,
-            'depth': depth,
-            'diffusion': 1e-2,  # 5e-1,
-            'time_step': 60,
-            'jitter_force': 1e-5,
-            'concentrations': {
-                'glucose': 1.0}})
+    if args.exchange:
+        # GrowDivide agents with Exchange
+        data = test_lattice(
+            exchange=True,
+            n_agents=3,
+            total_time=4000,
+            bounds=bounds)
+    else:
+        # GrowDivide agents
+        n_bins = [20, 20]
+        initial_field = np.zeros((n_bins[0], n_bins[1]))
+        initial_field[:, -1] = 100
+        data = test_lattice(
+            n_agents=3,
+            total_time=4000,
+            bounds=bounds,
+            n_bins=n_bins,
+            initial_field=initial_field)
 
+    # format the data for plot_snapshots
     agents, fields = format_snapshot_data(data)
+    initial_ids = list(data[0]['agents'].keys())
+    agent_ids = get_agent_ids(agents)
+
+    # make colors based on initial agents
+    agent_colors = {}
+    hues = [n/360 for n in [120, 270, 300, 240, 360, 30, 60]]
+    for idx, initial_id in enumerate(initial_ids):
+        hue = hues[idx]
+        color = [hue] + DEFAULT_SV
+        for agent_id in agent_ids:
+            if agent_id.startswith(initial_id, 0, len(initial_id)):
+                agent_colors[agent_id] = color
+
     plot_snapshots(
         bounds,
         agents=agents,
         fields=fields,
         n_snapshots=4,
+        agent_colors=agent_colors,
         out_dir=out_dir,
-        filename='lattice_snapshots')
+        filename=f"lattice_snapshots{'_exchange' if args.exchange else ''}")
 
 
 if __name__ == '__main__':
