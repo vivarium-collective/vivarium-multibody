@@ -484,6 +484,7 @@ def make_snapshots_figure(
     field_label_size=32,
     agent_shape='segment',
     agent_alpha=1,
+    colorbar_decimals=3,
     show_timeline=True,
     scale_bar_length=1,
     scale_bar_color='black',
@@ -509,6 +510,8 @@ def make_snapshots_figure(
           select from **rectangle**, **segment**
         * **agent_alpha** (:py:class:`float`): Alpha for agent
           plots.
+        * **colorbar_decimals** (:py:class:`int`): number of decimals in
+          colorbar.
         * **scale_bar_length** (:py:class:`float`): Length of scale
           bar.  Defaults to 1 (in units of micrometers). If 0, no
           bar plotted.
@@ -619,13 +622,13 @@ def make_snapshots_figure(
                     cbar_col = col_idx + 1
                     ax = fig.add_subplot(grid[row_idx, cbar_col])
                     if row_idx == 0:
-                        ax.set_title('Concentration (mM)', y=1.08)
+                        ax.set_title('Concentration\n(mM)', y=1.08)
                     ax.axis('off')
                     if vmin == vmax:
                         continue
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("left", size="5%", pad=0.0)
-                    fig.colorbar(im, cax=cax, format='%.3f')
+                    fig.colorbar(im, cax=cax, format=f'%.{colorbar_decimals}f')
                     ax.axis('off')
                 # Scale bar in first snapshot of each row
                 if col_idx == 0 and scale_bar_length:
@@ -718,6 +721,7 @@ def make_tags_figure(
         filename='tags',
         agent_shape='segment',
         background_color='black',
+        colorbar_decimals=3,
         tag_path_name_map=None,
         tag_label_size=20,
         default_font_size=36,
@@ -754,6 +758,8 @@ def make_tags_figure(
               to concentrations.
             * **background_color** (:py:class:`str`): use matplotlib colors,
               ``black`` by default
+            * **colorbar_decimals** (:py:class:`int`): number of decimals in
+              colorbar.
             * **tag_label_size** (:py:class:`float`): The font size for
               the tag name label
             * **default_font_size** (:py:class:`float`): Font size for
@@ -867,7 +873,7 @@ def make_tags_figure(
                 ax = fig.add_subplot(grid[row_idx, cbar_col])
                 if row_idx == 0:
                     if convert_to_concs:
-                        ax.set_title('Concentration (counts/fL)', y=1.08)
+                        ax.set_title('Concentration\n(counts/fL)', y=1.08)
                 ax.axis('off')
                 if min_tag == max_tag:
                     continue
@@ -885,7 +891,7 @@ def make_tags_figure(
                     ],
                 )
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
-                fig.colorbar(mappable, cax=cax, format='%.2f')
+                fig.colorbar(mappable, cax=cax, format=f'%.{colorbar_decimals}f')
 
             # Scale bar in first snapshot of each row
             if col_idx == 0 and scale_bar_length:
