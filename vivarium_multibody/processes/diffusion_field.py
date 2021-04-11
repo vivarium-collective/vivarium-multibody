@@ -156,10 +156,10 @@ class DiffusionField(Process):
         agents = states['agents']
 
         # diffuse field
-        delta_fields = self.diffuse(fields, timestep)
+        delta_fields, new_fields = self.diffuse(fields, timestep)
 
-        # get each agent's local environment
-        local_environments = self.get_local_environments(agents, fields)
+        # get each agent's new local environment
+        local_environments = self.get_local_environments(agents, new_fields)
 
         update = {'fields': delta_fields}
         if local_environments:
@@ -206,20 +206,23 @@ class DiffusionField(Process):
             field_new += self.diffusion * dt * convolve(field_new, LAPLACIAN_2D, mode='reflect')
             t += dt
 
-        return field_new - field
+        return field_new - field, field_new
 
     def diffuse(self, fields, timestep):
         delta_fields = {}
+        new_fields = {}
         for mol_id, field in fields.items():
 
             # run diffusion if molecule field is not uniform
             if len(set(field.flatten())) != 1:
-                delta = self.diffusion_delta(field, timestep)
+                delta, new_field = self.diffusion_delta(field, timestep)
             else:
                 delta = np.zeros_like(field)
+                new_field = field
             delta_fields[mol_id] = delta
+            new_fields[mol_id] = new_field
 
-        return delta_fields
+        return delta_fields, new_fields
 
 
 # testing
