@@ -99,6 +99,14 @@ class DiffusionField(Process):
 
         super().__init__(parameters)
 
+    def initial_state(self, config):
+        return {
+            'fields': {
+                field: self.initial.get(field, self.ones_field())
+                for field in self.molecule_ids
+            },
+        }
+
     def ports_schema(self):
         local_concentration_schema = {
             molecule: {
@@ -119,7 +127,7 @@ class DiffusionField(Process):
         fields_schema = {
             'fields': {
                 field: {
-                    '_value': self.initial.get(field, self.ones_field()),
+                    '_default': self.ones_field(),
                     '_updater': 'nonnegative_accumulate',
                     '_emit': True,
                 }
