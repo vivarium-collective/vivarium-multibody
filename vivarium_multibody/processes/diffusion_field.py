@@ -65,7 +65,7 @@ class DiffusionField(Process):
 
         # initial state
         self.molecule_ids = initial_parameters.get('molecules', self.defaults['molecules'])
-        self.initial_state = initial_parameters.get('initial_state', self.defaults['initial_state'])
+        self.initial = initial_parameters.get('initial_state', self.defaults['initial_state'])
 
         # parameters
         self.n_bins = initial_parameters.get('n_bins', self.defaults['n_bins'])
@@ -92,12 +92,12 @@ class DiffusionField(Process):
         gradient = initial_parameters.get('gradient', self.defaults['gradient'])
         if gradient:
             gradient_fields = make_gradient(gradient, self.n_bins, self.bounds)
-            self.initial_state.update(gradient_fields)
+            self.initial.update(gradient_fields)
 
         parameters = {}
         parameters.update(initial_parameters)
 
-        super(DiffusionField, self).__init__(parameters)
+        super().__init__(parameters)
 
     def ports_schema(self):
         local_concentration_schema = {
@@ -119,7 +119,7 @@ class DiffusionField(Process):
         fields_schema = {
             'fields': {
                 field: {
-                    '_value': self.initial_state.get(field, self.ones_field()),
+                    '_value': self.initial.get(field, self.ones_field()),
                     '_updater': 'nonnegative_accumulate',
                     '_emit': True,
                 }
