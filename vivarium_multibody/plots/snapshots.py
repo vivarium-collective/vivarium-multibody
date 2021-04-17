@@ -651,8 +651,14 @@ def make_snapshots_figure(
             if agents:
                 agents_now = agents[time]
                 plot_agents(
-                    ax, agents_now, agent_colors, agent_shape,
-                    dead_color, agent_alpha)
+                    ax,
+                    agents_now,
+                    agent_colors,
+                    agent_shape='segment',
+                    dead_color=None,
+                    membrane_width=membrane_width,
+                    membrane_color=membrane_color,
+                    alpha=agent_alpha)
             if xlim:
                 ax.set_xlim(*xlim)
             if ylim:
