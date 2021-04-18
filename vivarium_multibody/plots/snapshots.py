@@ -795,26 +795,27 @@ def make_tags_figure(
     # get tag ids and range
     tag_ranges = {}
 
-    for time, time_data in agents.items():
-        for agent_id, agent_data in time_data.items():
-            volume = agent_data.get('boundary', {}).get('volume', 0)
-            for tag_id in tagged_molecules:
-                level = get_value_from_path(agent_data, tag_id)
-                if convert_to_concs:
-                    level = level / volume if volume else 0
-                if tag_id in tag_ranges:
-                    tag_ranges[tag_id] = [
-                        min(tag_ranges[tag_id][0], level),
-                        max(tag_ranges[tag_id][1], level)]
-                else:
-                    # add new tag
-                    tag_ranges[tag_id] = [level, level]
+    for time_idx, (time, time_data) in enumerate(agents.items()):
+        if time_idx in time_indices:
+            for agent_id, agent_data in time_data.items():
+                volume = agent_data.get('boundary', {}).get('volume', 0)
+                for tag_id in tagged_molecules:
+                    level = get_value_from_path(agent_data, tag_id)
+                    if convert_to_concs:
+                        level = level / volume if volume else 0
+                    if tag_id in tag_ranges:
+                        tag_ranges[tag_id] = [
+                            min(tag_ranges[tag_id][0], level),
+                            max(tag_ranges[tag_id][1], level)]
+                    else:
+                        # add new tag
+                        tag_ranges[tag_id] = [level, level]
 
-                    # select random initial hue
-                    if tag_id not in tag_colors:
-                        hue = random.choice(HUES)
-                        tag_color = [hue] + FLOURESCENT_SV
-                        tag_colors[tag_id] = tag_color
+                        # select random initial hue
+                        if tag_id not in tag_colors:
+                            hue = random.choice(HUES)
+                            tag_color = [hue] + FLOURESCENT_SV
+                            tag_colors[tag_id] = tag_color
 
     # make the figure
     n_rows = len(tagged_molecules)
