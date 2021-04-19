@@ -67,7 +67,7 @@ def init_axes(
 
 
 def add_time_axis(
-        fig, grid, n_rows, n_cols, n_snapshots, snapshot_times):
+        fig, grid, n_rows, n_cols, n_snapshots, snapshot_times, time_unit='s'):
     # Add time axis across subplots
     super_spec = matplotlib.gridspec.SubplotSpec(
         grid,
@@ -91,7 +91,7 @@ def add_time_axis(
         yticks=[],
     )
     super_ax.set_xlabel(  # type: ignore
-        'Time (s)', labelpad=50)
+        f'Time ({time_unit})', labelpad=50)
     super_ax.xaxis.set_tick_params(width=2, length=8)
     for spine_name in ('top', 'right', 'left'):
         super_ax.spines[spine_name].set_visible(False)
@@ -474,6 +474,7 @@ def make_snapshots_figure(
     n_snapshots,
     time_indices,
     snapshot_times,
+    time_unit='s',
     plot_width=12,
     field_range=None,
     agent_colors=None,
@@ -545,7 +546,7 @@ def make_snapshots_figure(
 
     # Add time axis across subplots
     if show_timeline:
-        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
+        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times, time_unit)
 
     # Make the colormap
     min_rgb = matplotlib.colors.to_rgb(min_color)
@@ -722,6 +723,7 @@ def make_tags_figure(
         scale_bar_length=1,
         scale_bar_color='black',
         show_timeline=True,
+        time_unit='s',
         tagged_molecules=None,
         out_dir=False,
         filename='tags',
@@ -829,7 +831,7 @@ def make_tags_figure(
 
     # Add time axis across subplots
     if show_timeline:
-        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times)
+        add_time_axis(fig, grid, n_rows, n_cols, n_snapshots, snapshot_times, time_unit)
 
     # plot tags
     for row_idx, tag_id in enumerate(tag_ranges.keys()):
