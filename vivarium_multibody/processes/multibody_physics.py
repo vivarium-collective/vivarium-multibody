@@ -70,15 +70,15 @@ def random_body_position(body):
     return location
 
 
-def daughter_locations(parent_location, parent_values):
-    parent_length = parent_values['length']
-    parent_angle = parent_values['angle']
+def daughter_locations(value, state):
+    parent_length = state['length']
+    parent_angle = state['angle']
     pos_ratios = [-0.25, 0.25]
     daughter_locations = []
     for daughter in range(2):
         dx = parent_length * pos_ratios[daughter] * math.cos(parent_angle)
         dy = parent_length * pos_ratios[daughter] * math.sin(parent_angle)
-        location = [parent_location[0] + dx, parent_location[1] + dy]
+        location = [value[0] + dx, value[1] + dy]
         daughter_locations.append(location)
     return daughter_locations
 
