@@ -3,6 +3,7 @@ import shutil
 
 import cv2
 import numpy as np
+import matplotlib.pyplot as plt
 
 from vivarium_multibody.plots.snapshots import (
     make_snapshots_figure,
@@ -65,6 +66,7 @@ def make_video(
         fig_path = os.path.join(images_dir, f"img{t_index}.jpg")
         img_paths.append(fig_path)
         fig.savefig(fig_path, bbox_inches='tight')
+        plt.close()
 
     # make the video
     img_array = []

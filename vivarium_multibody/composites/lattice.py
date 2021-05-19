@@ -264,7 +264,12 @@ def main():
         filename=f"lattice_snapshots{'_exchange' if args.exchange else ''}")
 
     # make video
-    make_video(data, bounds, step=20, out_dir=out_dir, filename="lattice_video")
+    make_video(
+        data,
+        bounds,
+        step=60,
+        out_dir=out_dir,
+        filename=f"lattice{'_exchange' if args.exchange else ''}_video")
 
 
 if __name__ == '__main__':
