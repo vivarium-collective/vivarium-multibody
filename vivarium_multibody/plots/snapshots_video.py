@@ -52,7 +52,7 @@ def make_video(
 ):
 
     # make images directory, remove if existing
-    out_file = os.path.join(out_dir, f'{filename}.avi')
+    out_file = os.path.join(out_dir, f'{filename}.mp4')
     images_dir = os.path.join(out_dir, '_images')
     os.makedirs(images_dir)
 
@@ -70,14 +70,13 @@ def make_video(
 
     # make the video
     img_array = []
-    # for img_file in glob.glob(f'{images_dir}/*.jpg'):
     for img_file in img_paths:
         img = cv2.imread(img_file)
         height, width, layers = img.shape
         size = (width, height)
         img_array.append(img)
 
-    out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'DIVX'), 15, size)
+    out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'mp4v'), 15, size)
 
     for i in range(len(img_array)):
         out.write(img_array[i])
