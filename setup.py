@@ -31,5 +31,6 @@ setup(
         'vivarium-core>=0.2.0',
         'pytest',
         'pymunk',
+        'opencv-python',
     ],
 )

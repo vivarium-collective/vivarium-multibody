@@ -22,6 +22,7 @@ from vivarium_multibody.composites.grow_divide import (
 from vivarium_multibody.plots.snapshots import (
     format_snapshot_data, get_agent_ids, plot_snapshots,
     DEFAULT_SV)
+from vivarium_multibody.plots.snapshots_video import make_video
 
 NAME = 'lattice_environment'
 
@@ -218,6 +219,7 @@ def main():
 
     bounds = [25, 25]
 
+
     if args.exchange:
         # GrowDivide agents with Exchange
         data = test_lattice(
@@ -260,6 +262,9 @@ def main():
         agent_colors=agent_colors,
         out_dir=out_dir,
         filename=f"lattice_snapshots{'_exchange' if args.exchange else ''}")
+
+    # make video
+    make_video(data, bounds, step=20, out_dir=out_dir, filename="lattice_video")
 
 
 if __name__ == '__main__':
