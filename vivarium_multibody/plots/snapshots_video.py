@@ -5,8 +5,12 @@ import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
+from vivarium.core.composition import TEST_OUT_DIR
+
+from vivarium_multibody.composites.lattice import test_lattice
 from vivarium_multibody.plots.snapshots import (
     make_snapshots_figure,
+    make_tags_figure,
     format_snapshot_data,
     get_field_range,
     get_agent_colors
@@ -14,7 +18,10 @@ from vivarium_multibody.plots.snapshots import (
 
 
 
-def make_snapshot_function(data, bounds):
+def make_snapshot_function(
+        data,
+        bounds,
+        **kwargs):
     multibody_agents, multibody_fields = format_snapshot_data(data)
 
     # make the snapshot plot function
@@ -37,27 +44,71 @@ def make_snapshot_function(data, bounds):
             n_snapshots=1,
             bounds=bounds,
             default_font_size=12,
-            plot_width=7)
+            plot_width=7,
+            **kwargs)
         return fig
 
     return plot_single_snapshot, time_vec
 
 
+def make_tags_function(
+        data,
+        bounds,
+        **kwargs):
+    multibody_agents, multibody_fields = format_snapshot_data(data)
+
+    # make the snapshot plot function
+    time_vec = list(multibody_agents.keys())
+
+    def plot_single_tags(t_index):
+        time_indices = np.array([t_index])
+        snapshot_time = [time_vec[t_index]]
+        fig = make_tags_figure(
+            time_indices=time_indices,
+            snapshot_times=snapshot_time,
+            agents=multibody_agents,
+            n_snapshots=1,
+            bounds=bounds,
+            default_font_size=12,
+            plot_width=7,
+            **kwargs)
+        return fig
+
+    return plot_single_tags, time_vec
+
+
 def make_video(
         data,
         bounds,
+        type='fields',
         step=1,
         out_dir='out',
         filename='snapshot_vid',
+        **kwargs
 ):
 
     # make images directory, remove if existing
     out_file = os.path.join(out_dir, f'{filename}.mp4')
-    images_dir = os.path.join(out_dir, '_images')
+    images_dir = os.path.join(out_dir, f'_images_{type}')
+    if os.path.isdir(images_dir):
+        shutil.rmtree(images_dir)
     os.makedirs(images_dir)
 
     # get the single snapshots function
-    snapshot_fun, time_vec = make_snapshot_function(data, bounds)
+    if type == 'fields':
+        snapshot_fun, time_vec = make_snapshot_function(
+            data,
+            bounds,
+            show_timeline=False,
+            scale_bar_length=0,
+            **kwargs)
+    elif type == 'tags':
+        snapshot_fun, time_vec = make_tags_function(
+            data,
+            bounds,
+            show_timeline=False,
+            scale_bar_length=0,
+            **kwargs)
 
     # make the individual snapshot figures
     img_paths = []
@@ -92,3 +143,48 @@ def make_video(
 #     interactive_plot = interactive(
 #         plot_single_snapshot,
 #         t_index=widgets.IntSlider(min=0, max=time_index_range, step=2, value=0))
+
+
+def main():
+    out_dir = os.path.join(TEST_OUT_DIR, 'snapshots_video')
+    os.makedirs(out_dir, exist_ok=True)
+
+    # GrowDivide agents
+    bounds = [25, 25]
+    n_bins = [20, 20]
+    initial_field = np.zeros((n_bins[0], n_bins[1]))
+    initial_field[:, -1] = 100
+    data = test_lattice(
+        n_agents=3,
+        total_time=2000,
+        bounds=bounds,
+        n_bins=n_bins,
+        initial_field=initial_field)
+
+    # make snapshot video
+    make_video(
+        data,
+        bounds,
+        type='fields',
+        step=60,
+        out_dir=out_dir,
+        filename=f"snapshots")
+
+    # make tags video
+    tagged_molecules = [('boundary', 'mass',)]
+    make_video(
+        data,
+        bounds,
+        type='tags',
+        step=60,
+        out_dir=out_dir,
+        filename=f"tags",
+        tagged_molecules=tagged_molecules,
+        background_color='white')
+
+
+
+
+if __name__ == '__main__':
+    main()
+

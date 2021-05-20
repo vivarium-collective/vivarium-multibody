@@ -714,6 +714,33 @@ def plot_tags(
     )
 
 
+def get_tag_ranges(agents, tagged_molecules, time_indices, convert_to_concs, tag_colors):
+    # get tag ids and range
+    tag_ranges = {}
+    for time_idx, (time, time_data) in enumerate(agents.items()):
+        if time_idx in time_indices:
+            for agent_id, agent_data in time_data.items():
+                volume = agent_data.get('boundary', {}).get('volume', 0)
+                for tag_id in tagged_molecules:
+                    level = get_value_from_path(agent_data, tag_id)
+                    if convert_to_concs:
+                        level = level / volume if volume else 0
+                    if tag_id in tag_ranges:
+                        tag_ranges[tag_id] = [
+                            min(tag_ranges[tag_id][0], level),
+                            max(tag_ranges[tag_id][1], level)]
+                    else:
+                        # add new tag
+                        tag_ranges[tag_id] = [level, level]
+
+                        # select random initial hue
+                        if tag_id not in tag_colors:
+                            hue = random.choice(HUES)
+                            tag_color = [hue] + FLOURESCENT_SV
+                            tag_colors[tag_id] = tag_color
+    return tag_ranges, tag_colors
+
+
 def make_tags_figure(
         agents,
         bounds,
@@ -732,6 +759,7 @@ def make_tags_figure(
         colorbar_decimals=3,
         tag_path_name_map=None,
         tag_label_size=20,
+        plot_width=12,
         default_font_size=36,
         convert_to_concs=True,
         membrane_width=0.1,
@@ -780,49 +808,23 @@ def make_tags_figure(
                 the HSV color to use for that tag as a list.
     '''
 
-    if membrane_color is None:
-        membrane_color = [1, 1, 1]
-    if tag_colors is None:
-        tag_colors = {}
-    if tag_path_name_map is None:
-        tag_path_name_map = {}
-    if tagged_molecules is None:
-        tagged_molecules = []
+    membrane_color = membrane_color or [1, 1, 1]
+    tag_colors = tag_colors or {}
+    tag_path_name_map = tag_path_name_map or {}
+    tagged_molecules = tagged_molecules or []
     if tagged_molecules == []:
         raise ValueError('At least one molecule must be tagged.')
 
     # get data
     edge_length_x, edge_length_y = bounds
 
-    # get tag ids and range
-    tag_ranges = {}
-
-    for time_idx, (time, time_data) in enumerate(agents.items()):
-        if time_idx in time_indices:
-            for agent_id, agent_data in time_data.items():
-                volume = agent_data.get('boundary', {}).get('volume', 0)
-                for tag_id in tagged_molecules:
-                    level = get_value_from_path(agent_data, tag_id)
-                    if convert_to_concs:
-                        level = level / volume if volume else 0
-                    if tag_id in tag_ranges:
-                        tag_ranges[tag_id] = [
-                            min(tag_ranges[tag_id][0], level),
-                            max(tag_ranges[tag_id][1], level)]
-                    else:
-                        # add new tag
-                        tag_ranges[tag_id] = [level, level]
-
-                        # select random initial hue
-                        if tag_id not in tag_colors:
-                            hue = random.choice(HUES)
-                            tag_color = [hue] + FLOURESCENT_SV
-                            tag_colors[tag_id] = tag_color
+    tag_ranges, tag_colors = get_tag_ranges(
+        agents, tagged_molecules, time_indices, convert_to_concs, tag_colors)
 
     # make the figure
     n_rows = len(tagged_molecules)
     n_cols = n_snapshots + 1  # one column for the colorbar
-    figsize = (12 * n_cols, 12 * n_rows)
+    figsize = (plot_width * n_cols, plot_width * n_rows)
     max_dpi = min([2**16 // dim for dim in figsize]) - 1
     fig = plt.figure(figsize=figsize, dpi=min(max_dpi, 100))
     grid = plt.GridSpec(n_rows, n_cols, wspace=0.2, hspace=0.2)
