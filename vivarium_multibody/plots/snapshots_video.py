@@ -46,7 +46,6 @@ def make_snapshot_function(
             bounds=bounds,
             default_font_size=12,
             plot_width=7,
-            show_timeline=False,
             scale_bar_length=0,
             **kwargs)
         return fig
@@ -93,9 +92,7 @@ def make_tags_function(
             bounds=bounds,
             default_font_size=12,
             plot_width=7,
-            show_timeline=False,
             scale_bar_length=0,
-            show_colorbar=False,
             **kwargs)
         return fig
 
@@ -166,16 +163,17 @@ def make_video(
 #         t_index=widgets.IntSlider(min=0, max=time_index_range, step=2, value=0))
 
 
-def main(total_time=2000, step=60):
+def main(total_time=2000, step=60, exchange=False):
     out_dir = os.path.join(TEST_OUT_DIR, 'snapshots_video')
     os.makedirs(out_dir, exist_ok=True)
 
     # GrowDivide agents
-    bounds = [25, 25]
+    bounds = [30, 30]
     n_bins = [20, 20]
     initial_field = np.zeros((n_bins[0], n_bins[1]))
     initial_field[:, -1] = 100
     data = test_lattice(
+        exchange=exchange,
         n_agents=3,
         total_time=total_time,
         growth_noise=1e-3,
@@ -208,5 +206,5 @@ def main(total_time=2000, step=60):
 
 
 if __name__ == '__main__':
-    main(6000)
+    main(total_time=3000, exchange=False)
 

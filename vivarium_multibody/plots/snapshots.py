@@ -840,8 +840,6 @@ def make_tags_figure(
 
     # plot tags
     for row_idx, tag_id in enumerate(tag_ranges.keys()):
-        used_agent_colors = []
-        concentrations = []
         for col_idx, (time_idx, time) in enumerate(
             zip(time_indices, snapshot_times)
         ):
@@ -868,11 +866,8 @@ def make_tags_figure(
                     volume = agent_data.get('boundary', {}).get('volume', 0)
                     level = level / volume if volume else 0
                 if min_tag != max_tag:
-                    concentrations.append(level)
                     intensity = (level - min_tag)/ (max_tag - min_tag)
                     agent_color = tag_h, tag_s, intensity
-                    agent_rgb = matplotlib.colors.hsv_to_rgb(agent_color)
-                    used_agent_colors.append(agent_rgb)
                 else:
                     agent_color = tag_h, tag_s, 0
 
@@ -893,17 +888,14 @@ def make_tags_figure(
                     continue
                 divider = make_axes_locatable(ax)
                 cax = divider.append_axes("left", size="5%", pad=0.0)
-                norm = matplotlib.colors.Normalize(
-                    vmin=min_tag, vmax=max_tag)
-                # Sort colors and concentrations by concentration
-                sorted_idx = np.argsort(concentrations)
+                norm = matplotlib.colors.Normalize(vmin=min_tag, vmax=max_tag)
+                # make colormap
+                min_color = tag_h, tag_s, 0
+                max_color = tag_h, tag_s, 1
+                min_rgb = matplotlib.colors.hsv_to_rgb(min_color)
+                max_rgb = matplotlib.colors.hsv_to_rgb(max_color)
                 cmap = matplotlib.colors.LinearSegmentedColormap.from_list(
-                    'row_{}'.format(row_idx),
-                    [
-                        np.array(used_agent_colors)[sorted_idx][0],
-                        np.array(used_agent_colors)[sorted_idx][-1],
-                    ],
-                )
+                    'row_{}'.format(row_idx), [np.array(min_rgb), np.array(max_rgb)])
                 mappable = matplotlib.cm.ScalarMappable(norm, cmap)
                 fig.colorbar(mappable, cax=cax, format=f'%.{colorbar_decimals}f')
 
