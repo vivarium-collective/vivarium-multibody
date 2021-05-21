@@ -139,6 +139,8 @@ def test_lattice(
         bounds=[25, 25],
         n_bins=None,
         initial_field=None,
+        growth_rate=0.05,  # fast growth
+        growth_noise=5e-4,
 ):
     # lattice configuration
     lattice_config_kwargs = {
@@ -159,8 +161,8 @@ def test_lattice(
     # agent configuration
     agent_config = {
         'growth': {
-            'growth_rate': 0.05,  # 0.006 very fast growth
-            'default_growth_noise': 5e-4},
+            'growth_rate': growth_rate,
+            'default_growth_noise': growth_noise},
         'divide_condition': {
             'threshold': 2500 * units.fg}}
     exchange_config = {

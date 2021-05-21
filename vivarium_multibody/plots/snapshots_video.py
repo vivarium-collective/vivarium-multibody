@@ -13,7 +13,8 @@ from vivarium_multibody.plots.snapshots import (
     make_tags_figure,
     format_snapshot_data,
     get_field_range,
-    get_agent_colors
+    get_agent_colors,
+    get_tag_ranges
 )
 
 
@@ -45,6 +46,8 @@ def make_snapshot_function(
             bounds=bounds,
             default_font_size=12,
             plot_width=7,
+            show_timeline=False,
+            scale_bar_length=0,
             **kwargs)
         return fig
 
@@ -54,23 +57,45 @@ def make_snapshot_function(
 def make_tags_function(
         data,
         bounds,
-        **kwargs):
+        tagged_molecules=None,
+        tag_colors=None,
+        convert_to_concs=False,
+        **kwargs
+):
+    tag_colors = tag_colors or {}
     multibody_agents, multibody_fields = format_snapshot_data(data)
 
     # make the snapshot plot function
     time_vec = list(multibody_agents.keys())
+    time_indices = np.array(range(1, len(time_vec)))
 
+    # get agent colors, and ranges
+    tag_ranges, tag_colors = get_tag_ranges(
+        agents=multibody_agents,
+        tagged_molecules=tagged_molecules,
+        time_indices=time_indices,
+        convert_to_concs=convert_to_concs,
+        tag_colors=tag_colors)
+
+    # make the function for a single snapshot
     def plot_single_tags(t_index):
-        time_indices = np.array([t_index])
+        time_index = np.array([t_index])
         snapshot_time = [time_vec[t_index]]
         fig = make_tags_figure(
-            time_indices=time_indices,
+            time_indices=time_index,
             snapshot_times=snapshot_time,
             agents=multibody_agents,
+            tagged_molecules=tagged_molecules,
+            convert_to_concs=convert_to_concs,
+            tag_ranges=tag_ranges,
+            tag_colors=tag_colors,
             n_snapshots=1,
             bounds=bounds,
             default_font_size=12,
             plot_width=7,
+            show_timeline=False,
+            scale_bar_length=0,
+            show_colorbar=False,
             **kwargs)
         return fig
 
@@ -99,15 +124,11 @@ def make_video(
         snapshot_fun, time_vec = make_snapshot_function(
             data,
             bounds,
-            show_timeline=False,
-            scale_bar_length=0,
             **kwargs)
     elif type == 'tags':
         snapshot_fun, time_vec = make_tags_function(
             data,
             bounds,
-            show_timeline=False,
-            scale_bar_length=0,
             **kwargs)
 
     # make the individual snapshot figures
@@ -145,7 +166,7 @@ def make_video(
 #         t_index=widgets.IntSlider(min=0, max=time_index_range, step=2, value=0))
 
 
-def main():
+def main(total_time=2000, step=60):
     out_dir = os.path.join(TEST_OUT_DIR, 'snapshots_video')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -156,7 +177,8 @@ def main():
     initial_field[:, -1] = 100
     data = test_lattice(
         n_agents=3,
-        total_time=2000,
+        total_time=total_time,
+        growth_noise=1e-3,
         bounds=bounds,
         n_bins=n_bins,
         initial_field=initial_field)
@@ -166,7 +188,7 @@ def main():
         data,
         bounds,
         type='fields',
-        step=60,
+        step=step,
         out_dir=out_dir,
         filename=f"snapshots")
 
@@ -176,7 +198,7 @@ def main():
         data,
         bounds,
         type='tags',
-        step=60,
+        step=step,
         out_dir=out_dir,
         filename=f"tags",
         tagged_molecules=tagged_molecules,
@@ -186,5 +208,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(6000)
 

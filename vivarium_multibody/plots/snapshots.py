@@ -741,15 +741,19 @@ def get_tag_ranges(agents, tagged_molecules, time_indices, convert_to_concs, tag
     return tag_ranges, tag_colors
 
 
+
 def make_tags_figure(
         agents,
         bounds,
         time_indices,
         snapshot_times,
+        tag_ranges=None,
+        tag_colors=None,
         n_snapshots=6,
         scale_bar_length=1,
         scale_bar_color='black',
         show_timeline=True,
+        show_colorbar=True,
         time_unit='s',
         tagged_molecules=None,
         out_dir=False,
@@ -764,7 +768,6 @@ def make_tags_figure(
         convert_to_concs=True,
         membrane_width=0.1,
         membrane_color=None,
-        tag_colors=None,
 ):
     '''Plot snapshots of the simulation over time
 
@@ -814,12 +817,12 @@ def make_tags_figure(
     tagged_molecules = tagged_molecules or []
     if tagged_molecules == []:
         raise ValueError('At least one molecule must be tagged.')
+    if not tag_ranges:
+        tag_ranges, tag_colors = get_tag_ranges(
+            agents, tagged_molecules, time_indices, convert_to_concs, tag_colors)
 
     # get data
     edge_length_x, edge_length_y = bounds
-
-    tag_ranges, tag_colors = get_tag_ranges(
-        agents, tagged_molecules, time_indices, convert_to_concs, tag_colors)
 
     # make the figure
     n_rows = len(tagged_molecules)
@@ -879,7 +882,7 @@ def make_tags_figure(
                     None, membrane_width, membrane_color)
 
             # colorbar in new column after final snapshot
-            if col_idx == n_snapshots - 1:
+            if col_idx == n_snapshots - 1 and show_colorbar:
                 cbar_col = col_idx + 1
                 ax = fig.add_subplot(grid[row_idx, cbar_col])
                 if row_idx == 0:
