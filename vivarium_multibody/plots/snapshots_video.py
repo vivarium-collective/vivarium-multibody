@@ -17,12 +17,16 @@ from vivarium_multibody.plots.snapshots import (
     get_tag_ranges
 )
 
+DEFAULT_HIGHLIGHT_COLOR = [0, 1, 1]
+
 
 
 def make_snapshot_function(
         data,
         bounds,
+        agent_colors=None,
         **kwargs):
+    agent_colors = agent_colors or {}
     multibody_agents, multibody_fields = format_snapshot_data(data)
 
     # make the snapshot plot function
@@ -31,6 +35,7 @@ def make_snapshot_function(
     # get fields and agent colors
     multibody_field_range = get_field_range(multibody_fields, time_vec)
     multibody_agent_colors = get_agent_colors(multibody_agents)
+    multibody_agent_colors.update(agent_colors)
 
     def plot_single_snapshot(t_index):
         time_indices = np.array([t_index])
@@ -56,11 +61,13 @@ def make_snapshot_function(
 def make_tags_function(
         data,
         bounds,
+        agent_colors=None,
         tagged_molecules=None,
         tag_colors=None,
         convert_to_concs=False,
         **kwargs
 ):
+    agent_colors = agent_colors or {}
     tag_colors = tag_colors or {}
     multibody_agents, multibody_fields = format_snapshot_data(data)
 
@@ -84,6 +91,7 @@ def make_tags_function(
             time_indices=time_index,
             snapshot_times=snapshot_time,
             agents=multibody_agents,
+            agent_colors=agent_colors,
             tagged_molecules=tagged_molecules,
             convert_to_concs=convert_to_concs,
             tag_ranges=tag_ranges,
@@ -102,38 +110,57 @@ def make_tags_function(
 def make_video(
         data,
         bounds,
-        type='fields',
+        plot_type='fields',
         step=1,
+        highlight_agents=None,
+        show_timeseries=None,
+        highlight_color=DEFAULT_HIGHLIGHT_COLOR,
         out_dir='out',
         filename='snapshot_vid',
         **kwargs
 ):
+    """Make a video with snapshots across time
+
+    Args:
+        plot_type: (str) select either 'fields' or 'tags'. 'fields' is the default
+    """
+    highlight_agents = highlight_agents or []
+    show_timeseries = show_timeseries or []
 
     # make images directory, remove if existing
     out_file = os.path.join(out_dir, f'{filename}.mp4')
-    images_dir = os.path.join(out_dir, f'_images_{type}')
+    images_dir = os.path.join(out_dir, f'_images_{plot_type}')
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
     os.makedirs(images_dir)
 
+    if highlight_agents:
+        agent_colors = {
+            agent_id: highlight_color
+            for agent_id in highlight_agents}
+
     # get the single snapshots function
-    if type == 'fields':
+    if plot_type == 'fields':
         snapshot_fun, time_vec = make_snapshot_function(
             data,
             bounds,
+            agent_colors=agent_colors,
             **kwargs)
-    elif type == 'tags':
+    elif plot_type == 'tags':
         snapshot_fun, time_vec = make_tags_function(
             data,
             bounds,
+            agent_colors=agent_colors,
             **kwargs)
 
     # make the individual snapshot figures
     img_paths = []
     for t_index in range(0, len(time_vec) - 1, step):
-        fig = snapshot_fun(t_index)
         fig_path = os.path.join(images_dir, f"img{t_index}.jpg")
         img_paths.append(fig_path)
+
+        fig = snapshot_fun(t_index)
+
         fig.savefig(fig_path, bbox_inches='tight')
         plt.close()
 
@@ -146,7 +173,6 @@ def make_video(
         img_array.append(img)
 
     out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'mp4v'), 15, size)
-
     for i in range(len(img_array)):
         out.write(img_array[i])
     out.release()
@@ -167,6 +193,10 @@ def main(total_time=2000, step=60, exchange=False):
     out_dir = os.path.join(TEST_OUT_DIR, 'snapshots_video')
     os.makedirs(out_dir, exist_ok=True)
 
+    # tagged molecules for timeseries
+    tagged_molecules = [('boundary', 'mass',)]
+    highlight_agents = ['0', '00', '000']
+
     # GrowDivide agents
     bounds = [30, 30]
     n_bins = [20, 20]
@@ -185,22 +215,27 @@ def main(total_time=2000, step=60, exchange=False):
     make_video(
         data,
         bounds,
-        type='fields',
+        plot_type='fields',
         step=step,
         out_dir=out_dir,
-        filename=f"snapshots")
+        filename=f"snapshots",
+        highlight_agents=highlight_agents,
+        # show_timeseries=tagged_molecules,
+    )
 
     # make tags video
-    tagged_molecules = [('boundary', 'mass',)]
     make_video(
         data,
         bounds,
-        type='tags',
+        plot_type='tags',
         step=step,
         out_dir=out_dir,
         filename=f"tags",
+        highlight_agents=highlight_agents,
         tagged_molecules=tagged_molecules,
-        background_color='white')
+        # show_timeseries=tagged_molecules,
+        background_color='white',
+    )
 
 
 

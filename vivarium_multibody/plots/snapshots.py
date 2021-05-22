@@ -749,6 +749,7 @@ def make_tags_figure(
         snapshot_times,
         tag_ranges=None,
         tag_colors=None,
+        agent_colors=None,
         n_snapshots=6,
         scale_bar_length=1,
         scale_bar_color='black',
@@ -812,6 +813,7 @@ def make_tags_figure(
     '''
 
     membrane_color = membrane_color or [1, 1, 1]
+    agent_colors = agent_colors or {}
     tag_colors = tag_colors or {}
     tag_path_name_map = tag_path_name_map or {}
     tagged_molecules = tagged_molecules or []
@@ -873,6 +875,7 @@ def make_tags_figure(
 
                 agent_tag_colors[agent_id] = agent_color
 
+            agent_tag_colors.update(agent_colors)
             plot_agents(ax, agents[time], agent_tag_colors, agent_shape,
                     None, membrane_width, membrane_color)
 
