@@ -1,11 +1,13 @@
 import os
 import shutil
+import copy
 
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 
 from vivarium.core.composition import TEST_OUT_DIR
+from vivarium.plots.agents_multigen import plot_agents_multigen
 
 from vivarium_multibody.composites.lattice import test_lattice
 from vivarium_multibody.plots.snapshots import (
@@ -18,7 +20,7 @@ from vivarium_multibody.plots.snapshots import (
 )
 
 DEFAULT_HIGHLIGHT_COLOR = [0, 1, 1]
-
+PLOT_WIDTH = 7
 
 
 def make_snapshot_function(
@@ -50,7 +52,7 @@ def make_snapshot_function(
             n_snapshots=1,
             bounds=bounds,
             default_font_size=12,
-            plot_width=7,
+            plot_width=PLOT_WIDTH,
             scale_bar_length=0,
             **kwargs)
         return fig
@@ -99,12 +101,72 @@ def make_tags_function(
             n_snapshots=1,
             bounds=bounds,
             default_font_size=12,
-            plot_width=7,
+            plot_width=PLOT_WIDTH,
             scale_bar_length=0,
             **kwargs)
         return fig
 
     return plot_single_tags, time_vec
+
+
+def make_timeseries_function(
+        data,
+        show_timeseries=None,
+        highlight_agents=None,
+        highlight_color=DEFAULT_HIGHLIGHT_COLOR,
+        agents_key='agents',
+        **kwargs,
+):
+    agent_data = copy.deepcopy(data)
+    time_vec = list(agent_data.keys())
+
+    plot_settings = {
+        'column_width': 6,
+        'row_height': 1.5,
+        'stack_column': True,
+        'tick_label_size': 10,
+        'linewidth': 2,
+        'title_size': 10}
+
+    if show_timeseries:
+        plot_settings.update({'include_paths': show_timeseries})
+
+    # remove agents not included in highlight_agents
+    if highlight_agents:
+        for time, state in data.items():
+            agents = state[agents_key]
+            for agent_id, agent_state in agents.items():
+                if agent_id not in highlight_agents:
+                    del agent_data[time][agents_key][agent_id]
+        agent_colors = {agent_id: highlight_color for agent_id in highlight_agents}
+        plot_settings.update({'agent_colors': agent_colors})
+
+    # make the function
+    def plot_timeseries(t_index):
+        time_indices = np.array(range(0, t_index+1))
+        current_data = {
+            time_vec[index]: agent_data[time_vec[index]]
+            for index in time_indices}
+        fig = plot_agents_multigen(current_data, dict(plot_settings, **kwargs))
+        return fig
+
+    return plot_timeseries
+
+
+def video_from_images(img_paths, out_file):
+    # make the video
+    img_array = []
+    size = None
+    for img_file in img_paths:
+        img = cv2.imread(img_file)
+        height, width, layers = img.shape
+        size = (width, height)
+        img_array.append(img)
+
+    out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'mp4v'), 15, size)
+    for i in range(len(img_array)):
+        out.write(img_array[i])
+    out.release()
 
 
 def make_video(
@@ -129,6 +191,7 @@ def make_video(
 
     # make images directory, remove if existing
     out_file = os.path.join(out_dir, f'{filename}.mp4')
+    out_file2 = os.path.join(out_dir, f'{filename}_timeseries.mp4')
     images_dir = os.path.join(out_dir, f'_images_{plot_type}')
     if os.path.isdir(images_dir):
         shutil.rmtree(images_dir)
@@ -153,32 +216,40 @@ def make_video(
             agent_colors=agent_colors,
             **kwargs)
 
+    timeseries_fun = None
+    if show_timeseries:
+        timeseries_fun = make_timeseries_function(
+            data,
+            show_timeseries=show_timeseries,
+            highlight_agents=highlight_agents,
+            highlight_color=highlight_color)
+
     # make the individual snapshot figures
     img_paths = []
+    img_paths_2 = []
     for t_index in range(0, len(time_vec) - 1, step):
         fig_path = os.path.join(images_dir, f"img{t_index}.jpg")
         img_paths.append(fig_path)
 
         fig = snapshot_fun(t_index)
-
         fig.savefig(fig_path, bbox_inches='tight')
         plt.close()
 
-    # make the video
-    img_array = []
-    for img_file in img_paths:
-        img = cv2.imread(img_file)
-        height, width, layers = img.shape
-        size = (width, height)
-        img_array.append(img)
+        if show_timeseries:
+            fig_path2 = os.path.join(images_dir, f"timeseries{t_index}.jpg")
+            img_paths_2.append(fig_path2)
 
-    out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'mp4v'), 15, size)
-    for i in range(len(img_array)):
-        out.write(img_array[i])
-    out.release()
+            fig2 = timeseries_fun(t_index)
+            fig2.savefig(fig_path2, bbox_inches='tight')
+            plt.close()
+
+    # make the video
+    video_from_images(img_paths, out_file)
+    video_from_images(img_paths_2, out_file2)
 
     # delete image folder
     shutil.rmtree(images_dir)
+
 
 
 # def make_interactive(data, bounds):
@@ -194,7 +265,12 @@ def main(total_time=2000, step=60, exchange=False):
     os.makedirs(out_dir, exist_ok=True)
 
     # tagged molecules for timeseries
-    tagged_molecules = [('boundary', 'mass',)]
+    tagged_molecules = [
+        ('boundary', 'width',),
+        ('boundary', 'length',),
+        ('boundary', 'mass',),
+        ('boundary', 'angle',),
+    ]
     highlight_agents = ['0', '00', '000']
 
     # GrowDivide agents
@@ -220,7 +296,7 @@ def main(total_time=2000, step=60, exchange=False):
         out_dir=out_dir,
         filename=f"snapshots",
         highlight_agents=highlight_agents,
-        # show_timeseries=tagged_molecules,
+        show_timeseries=tagged_molecules,
     )
 
     # make tags video
@@ -233,7 +309,7 @@ def main(total_time=2000, step=60, exchange=False):
         filename=f"tags",
         highlight_agents=highlight_agents,
         tagged_molecules=tagged_molecules,
-        # show_timeseries=tagged_molecules,
+        show_timeseries=tagged_molecules,
         background_color='white',
     )
 
