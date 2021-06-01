@@ -8,7 +8,7 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='vivarium-multibody',
-    version='0.0.11',
+    version='0.0.12',
     packages=[
         'vivarium_multibody',
         'vivarium_multibody.plots',
