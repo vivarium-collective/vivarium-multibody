@@ -197,6 +197,7 @@ def make_video(
         shutil.rmtree(images_dir)
     os.makedirs(images_dir)
 
+    agent_colors = None
     if highlight_agents:
         agent_colors = {
             agent_id: highlight_color
@@ -314,8 +315,5 @@ def main(total_time=2000, step=60, exchange=False):
     )
 
 
-
-
 if __name__ == '__main__':
     main(total_time=3000, exchange=False)
-
