@@ -22,7 +22,7 @@ from vivarium_multibody.composites.grow_divide import (
 from vivarium_multibody.plots.snapshots import (
     format_snapshot_data, get_agent_ids, plot_snapshots,
     DEFAULT_SV)
-from vivarium_multibody.plots.snapshots_video import make_video
+
 
 NAME = 'lattice_environment'
 
@@ -139,6 +139,8 @@ def test_lattice(
         bounds=[25, 25],
         n_bins=None,
         initial_field=None,
+        growth_rate=0.05,  # fast growth
+        growth_noise=5e-4,
 ):
     # lattice configuration
     lattice_config_kwargs = {
@@ -159,8 +161,8 @@ def test_lattice(
     # agent configuration
     agent_config = {
         'growth': {
-            'growth_rate': 0.05,  # 0.006 very fast growth
-            'default_growth_noise': 5e-4},
+            'growth_rate': growth_rate,
+            'default_growth_noise': growth_noise},
         'divide_condition': {
             'threshold': 2500 * units.fg}}
     exchange_config = {
@@ -263,13 +265,6 @@ def main():
         out_dir=out_dir,
         filename=f"lattice_snapshots{'_exchange' if args.exchange else ''}")
 
-    # make video
-    make_video(
-        data,
-        bounds,
-        step=60,
-        out_dir=out_dir,
-        filename=f"lattice{'_exchange' if args.exchange else ''}_video")
 
 
 if __name__ == '__main__':
