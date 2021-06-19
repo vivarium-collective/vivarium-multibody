@@ -2,8 +2,8 @@ import os
 import argparse
 import numpy as np
 
-from vivarium.core.process import Composer
-from vivarium.core.experiment import Experiment
+from vivarium.core.composer import Composer
+from vivarium.core.engine import Engine
 from vivarium.core.composition import (
     COMPOSITE_OUT_DIR,
 )
@@ -204,7 +204,7 @@ def test_lattice(
         'topology': lattice_agent_composite.topology,
         'initial_state': initial_state,
         'progress_bar': True}
-    spatial_experiment = Experiment(experiment_config)
+    spatial_experiment = Engine(experiment_config)
 
     # run the simulation
     spatial_experiment.update(total_time)

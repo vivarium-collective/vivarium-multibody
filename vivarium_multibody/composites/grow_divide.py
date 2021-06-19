@@ -1,7 +1,7 @@
 import os
 
 from vivarium.library.units import units
-from vivarium.core.process import Composer
+from vivarium.core.composer import Composer
 from vivarium.core.composition import (
     composer_in_experiment,
     COMPOSITE_OUT_DIR,
