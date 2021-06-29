@@ -261,7 +261,18 @@ def make_video(
 #         t_index=widgets.IntSlider(min=0, max=time_index_range, step=2, value=0))
 
 
-def main(total_time=2000, step=60, exchange=False):
+def main(
+        total_time=2000,
+        step=60,
+        bounds=None,
+        n_bins=None,
+        exchange=False,
+        mother_machine=False
+):
+    if n_bins is None:
+        n_bins = [20, 20]
+    if bounds is None:
+        bounds = [30, 30]
     out_dir = os.path.join(TEST_OUT_DIR, 'snapshots_video')
     os.makedirs(out_dir, exist_ok=True)
 
@@ -275,8 +286,6 @@ def main(total_time=2000, step=60, exchange=False):
     highlight_agents = ['0', '00', '000']
 
     # GrowDivide agents
-    bounds = [30, 30]
-    n_bins = [20, 20]
     initial_field = np.zeros((n_bins[0], n_bins[1]))
     initial_field[:, -1] = 100
     data = test_lattice(
@@ -286,7 +295,9 @@ def main(total_time=2000, step=60, exchange=False):
         growth_noise=1e-3,
         bounds=bounds,
         n_bins=n_bins,
-        initial_field=initial_field)
+        initial_field=initial_field,
+        mother_machine=mother_machine,
+    )
 
     # make snapshot video
     make_video(
@@ -296,8 +307,8 @@ def main(total_time=2000, step=60, exchange=False):
         step=step,
         out_dir=out_dir,
         filename=f"snapshots",
-        highlight_agents=highlight_agents,
-        show_timeseries=tagged_molecules,
+        # highlight_agents=highlight_agents,
+        # show_timeseries=tagged_molecules,
     )
 
     # make tags video
@@ -308,12 +319,22 @@ def main(total_time=2000, step=60, exchange=False):
         step=step,
         out_dir=out_dir,
         filename=f"tags",
-        highlight_agents=highlight_agents,
+        # highlight_agents=highlight_agents,
         tagged_molecules=tagged_molecules,
-        show_timeseries=tagged_molecules,
+        # show_timeseries=tagged_molecules,
         background_color='white',
     )
 
 
 if __name__ == '__main__':
-    main(total_time=3000, exchange=False)
+    bounds = [30,30]
+    mother_machine = {
+        'spacer_thickness': 0.1,
+        'channel_height': 0.7 * bounds[1],
+        'channel_space': 1.5}
+    main(
+        total_time=3000,
+        exchange=False,
+        bounds=bounds,
+        mother_machine=mother_machine
+    )

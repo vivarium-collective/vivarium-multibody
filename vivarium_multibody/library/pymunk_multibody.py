@@ -208,9 +208,10 @@ class PymunkMultibody(object):
         ]
 
         if barriers:
+            assert isinstance(barriers, dict)
             spacer_thickness = barriers.get('spacer_thickness', 0.1)
-            channel_height = barriers.get('channel_height')
-            channel_space = barriers.get('channel_space')
+            channel_height = barriers.get('channel_height', 0.7 * bounds[1])
+            channel_space = barriers.get('channel_space', 1.5)
             n_lines = math.floor(x_bound/channel_space)
 
             machine_lines = [

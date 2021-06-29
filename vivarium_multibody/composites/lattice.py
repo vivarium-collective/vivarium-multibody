@@ -41,6 +41,7 @@ def make_lattice_config(
         keep_fields_emit=None,
         set_config=None,
         parallel=None,
+        mother_machine=False,
 ):
     config = {'multibody': {}, 'diffusion': {}}
 
@@ -81,6 +82,8 @@ def make_lattice_config(
     if parallel:
         config['diffusion']['_parallel'] = True
         config['multibody']['_parallel'] = True
+    if mother_machine:
+        config['multibody']['mother_machine'] = mother_machine
     if set_config:
         config = deep_merge(config, set_config)
 
@@ -141,6 +144,7 @@ def test_lattice(
         initial_field=None,
         growth_rate=0.05,  # fast growth
         growth_noise=5e-4,
+        mother_machine=False,
 ):
     # lattice configuration
     lattice_config_kwargs = {
@@ -150,6 +154,7 @@ def test_lattice(
         'diffusion': 1e-3,
         'time_step': 60,
         'jitter_force': 1e-5,
+        'mother_machine': mother_machine,
         'concentrations': {
             external_molecule: 1.0}
     }
