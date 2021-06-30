@@ -199,7 +199,7 @@ def test_lattice(
         'agents': {
             agent_id: {
                 'boundary': {
-                    'location': make_random_position(bounds),
+                    'location': make_random_position(bounds) ,
                     'mass': 1500 * units.fg}
             } for agent_id in agent_ids}}
 
