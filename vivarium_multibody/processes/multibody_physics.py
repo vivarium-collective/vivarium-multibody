@@ -131,7 +131,7 @@ class Multibody(Process):
     }
 
     def __init__(self, parameters=None):
-        super(Multibody, self).__init__(parameters)
+        super().__init__(parameters)
 
         # multibody parameters
         jitter_force = self.parameters['jitter_force']
@@ -145,6 +145,10 @@ class Multibody(Process):
         self.velocity_unit = self.parameters['velocity_unit']
 
         # make the multibody object
+        if self.mother_machine:
+            assert isinstance(self.mother_machine, dict), \
+                'mother_machine must be a dictionary with keys ' \
+                'spacer_thickness, channel_height, channel_space'
         multibody_config = {
             'agent_shape': self.agent_shape,
             'jitter_force': jitter_force,
@@ -236,8 +240,7 @@ class Multibody(Process):
                     if agent_id not in delete_agents}
 
                 update['agents']['_delete'] = [
-                    (agent_id,)
-                    for agent_id in delete_agents]
+                    agent_id for agent_id in delete_agents]
 
         return update
 
