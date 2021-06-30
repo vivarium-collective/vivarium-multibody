@@ -240,8 +240,7 @@ class Multibody(Process):
                     if agent_id not in delete_agents}
 
                 update['agents']['_delete'] = [
-                    (agent_id,)
-                    for agent_id in delete_agents]
+                    agent_id for agent_id in delete_agents]
 
         return update
 

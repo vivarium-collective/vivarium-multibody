@@ -21,36 +21,12 @@ from vivarium_multibody.plots.snapshots import (
 from vivarium_multibody.plots.snapshots_video import make_video
 
 
-def mother_machine_experiment(config):
-    # configure the experiment
-    agent_ids = config.get('agent_ids', [])
-    emitter = config.get('emitter', {'type': 'timeseries'})
-
-    # get the environment
-    environment = Lattice(config.get('environment', {}))
-    composite = environment.generate({})
-
-    # get the agents
-    growth_division = GrowDivide(config.get('growth_division', {}))
-    for agent_id in agent_ids:
-        agent = growth_division.generate({'agent_id': agent_id})
-        composite.merge(composite=agent, path=('agents', agent_id))
-
-    return Engine({
-        'processes': composite['processes'],
-        'topology': composite['topology'],
-        'initial_state': config.get('initial_state', {}),
-        'emitter': emitter,
-    })
-
-
 
 # configurations
 def mother_machine_body_config(config):
     '''
     Gets initial agent body locations given the mother machine set up
     '''
-    # cell dimensions
     width = 1
     length = 2
     volume = volume_from_length(length, width)
@@ -82,29 +58,33 @@ def mother_machine_body_config(config):
 
 
 def get_mother_machine_config():
-    bounds = [20, 20]
+    bounds = [30, 30]
     n_bins = [10, 10]
     channel_height = 0.7 * bounds[1]
-    channel_space = 1.5
+    channel_space = 1.3
+    spacer_thickness = 0.2
     n_agents = 3
+    growth_rate = 0.0004
+    time_step = 60
 
     agent_ids = [str(agent_id) for agent_id in range(n_agents)]
 
-    ## growth division agent
+    ## growth division agent config
     growth_division_config = {
         'agents_path': ('..', '..', 'agents'),
         'global_path': ('global',),
-        'growth_rate': 0.006,  # fast!
-        'division_volume': 2.6}
+        'growth': {
+            'default_growth_rate': growth_rate}}
 
     ## environment
-    # multibody
+    # multibody config
     multibody_config = {
-        'animate': False,
+        'time_step': time_step,
+        'jitter_force': 1e-5,
         'mother_machine': {
+            'spacer_thickness': spacer_thickness,
             'channel_height': channel_height,
             'channel_space': channel_space},
-        'jitter_force': 1e-3,
         'bounds': bounds}
 
     body_config = {
@@ -116,6 +96,7 @@ def get_mother_machine_config():
 
     # diffusion
     diffusion_config = {
+        'time_step': time_step,
         'molecules': ['glc'],
         'gradient': {
             'type': 'gaussian',
@@ -138,13 +119,31 @@ def get_mother_machine_config():
             'diffusion': diffusion_config}}
 
 
-def run_mother_machine(time=5, out_dir='out'):
-    mother_machine_config = get_mother_machine_config()
-    experiment = mother_machine_experiment(mother_machine_config)
+def run_mother_machine(time=10, out_dir='out'):
+    config = get_mother_machine_config()
+
+    # configure the experiment
+    agent_ids = config.get('agent_ids', ['0'])
+
+    # get the environment composite
+    environment = Lattice(config.get('environment', {}))
+    composite = environment.generate({})
+
+    # add the agents
+    growth_division = GrowDivide(config.get('growth_division', {}))
+    for agent_id in agent_ids:
+        agent = growth_division.generate({'agent_id': agent_id})
+        composite.merge(composite=agent, path=('agents', agent_id))
+
+    experiment = Engine({
+        'processes': composite['processes'],
+        'topology': composite['topology'],
+        'initial_state': config.get('initial_state', {}),
+        'progress_bar': True,
+    })
 
     # simulate
     settings = {
-        'emit_step': 5,
         'total_time': time,
         'return_raw_data': True}
     data = simulate_experiment(experiment, settings)
@@ -156,23 +155,23 @@ def run_mother_machine(time=5, out_dir='out'):
 
     # snapshot plot
     agents, fields = format_snapshot_data(data)
-    bounds = mother_machine_config['environment']['multibody']['bounds']
+    bounds = config['environment']['multibody']['bounds']
     plot_snapshots(
         bounds,
         agents=agents,
         fields=fields,
         n_snapshots=4,
         out_dir=out_dir,
-        filename=f"mother_machine_snapshots")
+        filename=f"mother_machine")
 
     # make snapshot video
     make_video(
         data,
         bounds,
         plot_type='fields',
-        step=10,
+        step=100,
         out_dir=out_dir,
-        filename=f"snapshots",
+        filename=f"mother_machine",
     )
 
 
@@ -181,4 +180,4 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    run_mother_machine(2000, out_dir)
+    run_mother_machine(7000, out_dir)
