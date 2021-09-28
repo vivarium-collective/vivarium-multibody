@@ -204,7 +204,7 @@ def test_lattice(
         'topology': lattice_agent_composite.topology,
         'initial_state': initial_state,
         'progress_bar': True}
-    spatial_experiment = Engine(experiment_config)
+    spatial_experiment = Engine(**experiment_config)
 
     # run the simulation
     spatial_experiment.update(total_time)
