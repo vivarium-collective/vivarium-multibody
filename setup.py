@@ -8,7 +8,7 @@ with open("README.md", 'r') as readme:
 
 setup(
     name='vivarium-multibody',
-    version='0.0.14',
+    version='0.0.15',
     packages=[
         'vivarium_multibody',
         'vivarium_multibody.plots',
@@ -28,7 +28,7 @@ setup(
     package_data={},
     include_package_data=True,
     install_requires=[
-        'vivarium-core>=0.3.0',
+        'vivarium-core>=0.3.9',
         'pytest',
         'pymunk',
         'opencv-python',

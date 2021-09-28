@@ -177,8 +177,8 @@ class Multibody(Process):
                         '_divider': {
                             'divider': daughter_locations,
                             'topology': {
-                                'length': ('length',),
-                                'angle': ('angle',)}}},
+                                'length': ('..', 'length',),
+                                'angle': ('..', 'angle',)}}},
                     'length': {
                         '_emit': True,
                         '_default': 2.0},
