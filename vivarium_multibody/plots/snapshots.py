@@ -635,7 +635,7 @@ def make_snapshots_figure(
                 if col_idx == 0 and scale_bar_length:
                     scale_bar = anchored_artists.AnchoredSizeBar(
                         ax.transData, scale_bar_length,
-                        f'${scale_bar_length} \mu m$', 'lower left',
+                        f'{scale_bar_length} μm', 'lower left',
                         color=scale_bar_color,
                         frameon=False,
                         sep=scale_bar_length,
@@ -668,7 +668,7 @@ def make_snapshots_figure(
             if col_idx == 0 and scale_bar_length:
                 scale_bar = anchored_artists.AnchoredSizeBar(
                     ax.transData, scale_bar_length,
-                    f'${scale_bar_length} \\mu m$', 'lower left',
+                    f'{scale_bar_length} μm', 'lower left',
                     color=scale_bar_color,
                     frameon=False,
                     sep=scale_bar_length,
@@ -906,7 +906,7 @@ def make_tags_figure(
             if col_idx == 0 and scale_bar_length:
                 scale_bar = anchored_artists.AnchoredSizeBar(
                     ax.transData, scale_bar_length,
-                    f'${scale_bar_length} \\mu m$', 'lower left',
+                    f'{scale_bar_length} μm', 'lower left',
                     color=scale_bar_color,
                     frameon=False,
                     sep=scale_bar_length,
