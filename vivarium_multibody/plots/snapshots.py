@@ -761,7 +761,7 @@ def make_tags_figure(
         filename='tags',
         agent_shape='segment',
         background_color='black',
-        colorbar_decimals=3,
+        colorbar_decimals=1,
         tag_path_name_map=None,
         tag_label_size=20,
         plot_width=12,
@@ -868,7 +868,7 @@ def make_tags_figure(
                     volume = agent_data.get('boundary', {}).get('volume', 0)
                     level = level / volume if volume else 0
                 if min_tag != max_tag:
-                    intensity = (level - min_tag)/ (max_tag - min_tag)
+                    intensity = (level - min_tag) / (max_tag - min_tag)
                     agent_color = tag_h, tag_s, intensity
                 else:
                     agent_color = tag_h, tag_s, 0
@@ -919,7 +919,5 @@ def make_tags_figure(
         fig_path = os.path.join(out_dir, filename)
         fig.subplots_adjust(wspace=0.7, hspace=0.1)
         fig.savefig(fig_path, bbox_inches='tight')
-        plt.close(fig)
-    else:
-        return fig
+    return fig
 
