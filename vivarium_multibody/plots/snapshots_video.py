@@ -75,7 +75,7 @@ def make_tags_function(
 
     # make the snapshot plot function
     time_vec = list(multibody_agents.keys())
-    time_indices = np.array(range(1, len(time_vec)))
+    time_indices = np.array(range(0, len(time_vec)))
 
     # get agent colors, and ranges
     tag_ranges, tag_colors = get_tag_ranges(
