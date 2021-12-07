@@ -135,7 +135,7 @@ def run_mother_machine(time=10, out_dir='out'):
         agent = growth_division.generate({'agent_id': agent_id})
         composite.merge(composite=agent, path=('agents', agent_id))
 
-    experiment = Engine({
+    experiment = Engine(**{
         'processes': composite['processes'],
         'topology': composite['topology'],
         'initial_state': config.get('initial_state', {}),
