@@ -57,13 +57,12 @@ def mother_machine_body_config(config):
     return initial_agents
 
 
-def get_mother_machine_config():
+def get_mother_machine_config(n_agents=3):
     bounds = [30, 30]
     n_bins = [10, 10]
     channel_height = 0.7 * bounds[1]
     channel_space = 1.3
     spacer_thickness = 0.2
-    n_agents = 3
     growth_rate = 0.0004
     time_step = 60
 
@@ -120,7 +119,7 @@ def get_mother_machine_config():
 
 
 def run_mother_machine(time=10, out_dir='out'):
-    config = get_mother_machine_config()
+    config = get_mother_machine_config(n_agents=6)
 
     # configure the experiment
     agent_ids = config.get('agent_ids', ['0'])

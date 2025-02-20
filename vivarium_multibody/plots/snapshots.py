@@ -139,6 +139,7 @@ def plot_agent(
     if isinstance(color, str):
         rgb = color
     else:
+        color = np.asarray(color)  # Ensures it's a NumPy array before conversion
         rgb = hsv_to_rgb(color)
 
     if agent_shape == 'rectangle':

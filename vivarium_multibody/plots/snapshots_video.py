@@ -2,6 +2,7 @@ import os
 import shutil
 import copy
 
+import imageio
 import cv2
 import numpy as np
 import matplotlib.pyplot as plt
@@ -153,20 +154,31 @@ def make_timeseries_function(
     return plot_timeseries
 
 
-def video_from_images(img_paths, out_file):
-    # make the video
-    img_array = []
-    size = None
-    for img_file in img_paths:
-        img = cv2.imread(img_file)
-        height, width, layers = img.shape
-        size = (width, height)
-        img_array.append(img)
+def video_from_images(img_paths, out_file, format='gif'):
+    if format == 'gif':
+        # Ensure output filename ends with .gif
+        if not out_file.endswith('.gif'):
+            out_file = out_file.rsplit('.', 1)[0] + '.gif'
 
-    out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'mp4v'), 15, size)
-    for i in range(len(img_array)):
-        out.write(img_array[i])
-    out.release()
+        # Convert images to GIF using imageio
+        images = [imageio.imread(img) for img in img_paths]
+        imageio.mimsave(out_file, images, duration=0.1)  # Adjust duration if needed
+        print(f"GIF saved to {out_file}")
+    else:
+        # Default to MP4 using OpenCV
+        img_array = []
+        size = None
+        for img_file in img_paths:
+            img = cv2.imread(img_file)
+            height, width, layers = img.shape
+            size = (width, height)
+            img_array.append(img)
+
+        out = cv2.VideoWriter(out_file, cv2.VideoWriter_fourcc(*'mp4v'), 15, size)
+        for i in range(len(img_array)):
+            out.write(img_array[i])
+        out.release()
+        print(f"Video saved to {out_file}")
 
 
 def make_video(
@@ -179,6 +191,7 @@ def make_video(
         highlight_color=DEFAULT_HIGHLIGHT_COLOR,
         out_dir='out',
         filename='snapshot_vid',
+        format='gif',
         **kwargs
 ):
     """Make a video with snapshots across time
@@ -245,8 +258,9 @@ def make_video(
             plt.close()
 
     # make the video
-    video_from_images(img_paths, out_file)
-    video_from_images(img_paths_2, out_file2)
+    video_from_images(img_paths, out_file, format=format)
+    if show_timeseries:
+        video_from_images(img_paths_2, out_file2, format=format)
 
     # delete image folder
     shutil.rmtree(images_dir)
