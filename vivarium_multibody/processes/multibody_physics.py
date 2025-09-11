@@ -69,7 +69,7 @@ def random_body_position(body):
             location = (width, random.uniform(0, length))
     return location
 
-
+#this is a divider schema
 def daughter_locations(value, state):
     parent_length = state['length']
     parent_angle = state['angle']
@@ -128,6 +128,7 @@ class Multibody(Process):
         'boundary_key': 'boundary',
         'mother_machine': False,
         'animate': False,
+        'time_step': 1.0,
     }
 
     def __init__(self, parameters=None):
@@ -349,162 +350,3 @@ class InvokeUpdate(object):
     def get(self, timeout=0):
         return self.update
 
-# tests and simulations
-def test_multibody(n_agents=1, time=10):
-    agent_ids = [
-        str(agent_id)
-        for agent_id in range(n_agents)]
-    multibody_config = {
-        'agents': agent_body_config({
-            'bounds': DEFAULT_BOUNDS,
-            'agent_ids': agent_ids})}
-
-    multibody = Multibody(multibody_config)
-
-    # initialize agent's boundary state
-    initial_agents_state = multibody_config['agents']
-    initial_state = {'agents': initial_agents_state}
-    experiment = process_in_experiment(multibody, initial_state=initial_state)
-
-    # run experiment
-    settings = {
-        'timestep': 1,
-        'total_time': time,
-        'return_raw_data': True}
-    return simulate_experiment(experiment, settings)
-
-
-def test_growth_division(
-        config=default_gd_config,
-        growth_rate=0.05,
-        growth_rate_noise=0.001,
-        division_volume=0.4**3,
-        total_time=10,
-        timestep=1,
-        experiment_settings={},
-):
-    initial_agents_state = config['agents']
-
-    # make the process
-    multibody = Multibody(config)
-    experiment = process_in_experiment(multibody, experiment_settings)
-    experiment.state.update_subschema(
-        ('agents',), {
-            'boundary': {
-                'mass': {
-                    '_updater': 'set',
-                    '_divider': 'split'
-                },
-                'length': {
-                    '_updater': 'set',
-                    '_divider': 'split'
-                },
-                'volume': {
-                    '_updater': 'set',
-                    '_divider': 'split'
-                }}})
-    experiment.state.apply_subschemas()
-
-    # make initial agent state
-    experiment.state.set_value({'agents': initial_agents_state})
-    agents_store = experiment.state.get_path(['agents'])
-
-    # emit initial state
-    experiment.emit_data()
-
-    # run simulation
-    time = 0
-    while time < total_time:
-        experiment.update(timestep)
-        time += timestep
-        agents_state = agents_store.get_value()
-
-        invoked_update = []
-        for agent_id, state in agents_state.items():
-            state = state['boundary']
-            length = state['length']
-            width = state['width']
-            mass = state['mass'].magnitude
-
-            # update
-            growth_rate2 = (
-                growth_rate + np.random.normal(0.0, growth_rate_noise)) * timestep
-            new_mass = mass + mass * growth_rate2
-            new_length = length + length * growth_rate2
-            new_volume = volume_from_length(new_length, width)
-
-            if new_volume > division_volume:
-                daughter_ids = [str(agent_id) + '0', str(agent_id) + '1']
-                daughter_updates = []
-                for daughter_id in daughter_ids:
-                    daughter_updates.append({
-                        'key': daughter_id,
-                        'processes': {},
-                        'topology': {},
-                        'initial_state': {}})
-                update = {
-                    '_divide': {
-                        'mother': agent_id,
-                        'daughters': daughter_updates}}
-            else:
-                update = {
-                    agent_id: {
-                        'boundary': {
-                            'volume': new_volume,
-                            'length': new_length,
-                            'mass': new_mass * units.fg}}}
-
-            invoked_update.append((InvokeUpdate({'agents': update}), None))
-
-        # update experiment
-        experiment.send_updates(invoked_update)
-
-    experiment.end()
-    return experiment.emitter.get_data_unitless()
-
-
-def run_growth_division(
-        out_dir='out',
-        animate=True,
-):
-    n_agents = 2
-    agent_ids = [
-        str(agent_id)
-        for agent_id in range(n_agents)]
-
-    # configure the multibody process
-    bounds = DEFAULT_BOUNDS
-    multibody_config = {
-        'animate': animate,
-        # 'jitter_force': 1e0,
-        'bounds': bounds}
-    body_config = {
-        'bounds': bounds,
-        'agent_ids': agent_ids}
-    multibody_config.update(agent_body_config(body_config))
-
-    # experiment settings
-    experiment_settings = {
-        'progress_bar': False,
-        'display_info': False}
-
-    # run the test
-    gd_data = test_growth_division(
-        config=multibody_config,
-        growth_rate=0.05,
-        growth_rate_noise=0.001,
-        division_volume=volume_from_length(4, 1),
-        total_time=100,
-        experiment_settings=experiment_settings)
-
-    agents, fields = format_snapshot_data(gd_data)
-    return plot_snapshots(
-        bounds, agents=agents, fields=fields, out_dir=out_dir)
-
-
-if __name__ == '__main__':
-    out_dir = os.path.join(PROCESS_OUT_DIR, NAME)
-    if not os.path.exists(out_dir):
-        os.makedirs(out_dir)
-
-    run_growth_division(out_dir)
