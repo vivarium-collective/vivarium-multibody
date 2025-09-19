@@ -8,13 +8,13 @@ Check out the
 guide of the documentation. 
 
 
-# Project Name
+# Pymunk Biofilm
 
 <!--
 TODO: Fill in your own project name
 -->
 
-Introduction to your project.
+Added pymunk_biofilm.py --> experiment using the pymunk engine and architecture of the mother machine. In this project I aim to simulate biofilm growth on a surface using the 2D physics of pymunk and multibody physics.
 
 <!--
 TODO: Fill in your own introduction.
