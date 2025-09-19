@@ -17,8 +17,6 @@ from vivarium_multibody.plots.snapshots import (
 from vivarium_multibody.plots.snapshots_video import make_video
 
 
-#from vivarium_multibody.processes import *
-
 
 def cellbody_config(config):
     width = 2
@@ -35,7 +33,7 @@ def cellbody_config(config):
         init_agents[agent_id] = {
             'boundary': {
                 'location': [x, y],
-                'angle': PI / 2,  # 90 degrees meaning all cells oriented vertically
+                'angle': PI / 2,  # 90 degrees meaning cells oriented vertically
                 'volume': volume,
                 'length': length,  # agent length
                 'width': width
@@ -94,7 +92,7 @@ def env_configs(n_agents=4):
     }
 
 
-def run_biofilm_sim(time=7000, out_dir='out'):
+def run_biofilm_sim(time=100, out_dir='out'):
     config = env_configs()
     agent_ids = config['agent_ids']
 
@@ -118,7 +116,7 @@ def run_biofilm_sim(time=7000, out_dir='out'):
     settings = {'total_time': time, 'return_raw_data': True}
     data = simulate_experiment(experiment=experiment, settings=settings)
 
-    #plots
+    #plots - add more features like maybe make color assigned to []
     plot_settings = {'agents_key': 'agents'}
     plot_agents_multigen(data, plot_settings, out_dir=out_dir)
 
@@ -128,11 +126,12 @@ def run_biofilm_sim(time=7000, out_dir='out'):
         bounds,
         agents=agents,
         fields=fields,
-        n_snapshots=40,
+        n_snapshots=10,
         out_dir=out_dir,
         filename=f"cells_in_box"
     )
 
+#Movie doesn't fully work right now - makes it but not animated
     make_video(
         data,
         bounds,
@@ -142,15 +141,10 @@ def run_biofilm_sim(time=7000, out_dir='out'):
         filename=f"cells_in_movie"
     )
 
-    print("Starting simulate...")
-    settings = {'total_time': time, 'return_raw_data': True}
-    data = simulate_experiment(experiment=experiment, settings=settings)
-    print("Simulate done.")
-
 
 if __name__ == '__main__':
     out_dir = os.path.join('out', 'experiments', 'biofilm_cells')
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    run_biofilm_sim(7000, out_dir)
+    run_biofilm_sim(100, out_dir)
