@@ -98,14 +98,14 @@ def get_mother_config(n_agents=4):
 
     #multibody config
     #agent mechanics
-    multibody_config = {
-        'time_step': time_step,
-        'jitter_force': 1e-2, #small force to avoid overlapping
-        'mother_machine': {
-            'space_thickness':space_thickness, #wall thickness
-            'channel_height': channel_height, #channel-y size
-            'channel_space': channel_space}, #spacing between slots
-        'bounds': bounds} #domain size (x,y)
+    #multibody_config = {
+       # 'time_step': time_step,
+       # 'jitter_force': 1e-2, #small force to avoid overlapping
+       # 'mother_machine': {
+       #     'space_thickness':space_thickness, #wall thickness
+        #    'channel_height': channel_height, #channel-y size
+        #    'channel_space': channel_space}, #spacing between slots
+       # 'bounds': bounds} #domain size (x,y)
 
     #inital agent geometry/placement
     #initial_agent is state into agents store at time 0
@@ -142,7 +142,8 @@ def get_mother_config(n_agents=4):
         'agent_ids': agent_ids,
         'growth_division_config': growth_division_config,
         'environment': {
-            'multibody': multibody_config,
+            #'multibody': multibody_config,
+            'bounds': bounds,
             'diffusion': diffusion_config}}
 
 #function to run the mother machine simulation and all the configs
@@ -210,14 +211,14 @@ def run_mother_machine(time=5, out_dir='out'):
     # environment snapshots
         #format_snapshot_data = extracts agent + field states at different times
     agents,fields = format_snapshot_data(data)
-    bounds = config['environment']['multibody']['bounds'] #simulation domain size
+    bounds = config['environment']['bounds'] #simulation domain size
     plot_snapshots(
         bounds,
         agents=agents,
         fields=fields, #concentration fields (glucose)
         n_snapshots=4, #show 4 timepoints
         out_dir=out_dir,
-        filename=f"mother_machine_simulation")
+        filename=f"machine_simulation")
 
     #make video
         #data = simulation output from simulate_experiment
@@ -229,7 +230,7 @@ def run_mother_machine(time=5, out_dir='out'):
         plot_type='fields',
         step=100,
         out_dir=out_dir,
-        filename=f"mother_machine_simulation",
+        filename=f"machine_simulation",
     )
 
 #script entry point (to have it run as a program)
@@ -238,7 +239,7 @@ def run_mother_machine(time=5, out_dir='out'):
     #run simulation for 7000 units and plot into out_dir
 
 if __name__ == '__main__':
-    out_dir = os.path.join('out', 'experiments', 'mother_machine_simulation')
+    out_dir = os.path.join('out', 'experiments', 'machine_simulation')
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
