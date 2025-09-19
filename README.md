@@ -1,3 +1,18 @@
+# Pymunk Biofilm - this is a branch of the viviarum-multibody repository
+
+<!--
+TODO: Fill in your own project name
+-->
+
+Added pymunk_biofilm.py 
+
+* experiment using the pymunk engine and architecture of the mother machine. In this project I aim to simulate biofilm growth on a surface using the 2D physics of pymunk and multibody physics.
+
+
+
+
+
+
 # Pymunk Vivarium Project
 
 Visit [the Vivarium Core
@@ -7,18 +22,6 @@ Check out the
 [getting started](https://vivarium-core.readthedocs.io/en/latest/getting_started.html)
 guide of the documentation. 
 
-
-# Pymunk Biofilm
-
-<!--
-TODO: Fill in your own project name
--->
-
-Added pymunk_biofilm.py --> experiment using the pymunk engine and architecture of the mother machine. In this project I aim to simulate biofilm growth on a surface using the 2D physics of pymunk and multibody physics.
-
-<!--
-TODO: Fill in your own introduction.
--->
 
 ## Installation
 
