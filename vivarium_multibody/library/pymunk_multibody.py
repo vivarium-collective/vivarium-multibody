@@ -15,6 +15,9 @@ def get_force_with_angle(force, angle):
     return [x, y]
 
 
+
+#This code chunk finds the coordinates of the rods front-center point starting from the corner
+#Moves from the corner forward by the full length then sideways by half the width, returning with the same angle
 def front_from_corner(width, length, corner_position, angle):
     half_width = width/2
     dx = length * math.cos(angle) + half_width * math.cos(angle + PI/2)  # PI/2 gives a half-rotation for the width component
@@ -22,7 +25,7 @@ def front_from_corner(width, length, corner_position, angle):
     front_position = [corner_position[0] + dx, corner_position[1] + dy]
     return np.array([front_position[0], front_position[1], angle])
 
-
+#Goes from the center to a specific corner
 def corner_from_center(width, length, center_position, angle):
     half_length = length/2
     half_width = width/2
