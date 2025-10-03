@@ -39,14 +39,14 @@ def cellbody_config(config):
                 'length': length,  # agent length
                 'width': width,
                 'mass': 1339 * units.fg,
-                'thrust':1.0,
+                'thrust':0,
                 'torque':0
             }
         }
     return init_agents
 
 
-def env_configs(n_agents=4, bounds=None):
+def env_configs(n_agents=1, bounds=None):
     if bounds is None:
         bounds = [20, 20]
     n_bins = [60,60]
@@ -76,6 +76,7 @@ def env_configs(n_agents=4, bounds=None):
         'mother_machine': False,
         'time_step': timestep,
         'animate': False,
+        'physics_dt': timestep,
     }
 
 
@@ -108,7 +109,7 @@ def env_configs(n_agents=4, bounds=None):
     }
 
 
-def run_biofilm_sim(time=100, out_dir='out'):
+def run_biofilm_sim(time=20, out_dir='out'):
     config = env_configs()
     agent_ids = config['agent_ids']
 
@@ -164,7 +165,8 @@ def run_biofilm_sim(time=100, out_dir='out'):
 
     times = sorted(fields.keys())
     num_frames = len(times)
-    vid_steps = max(1, num_frames // 120)
+    #vid_steps = max(1, num_frames // 120)
+    vid_steps = num_frames
 
     make_video(
         data,
@@ -184,4 +186,4 @@ if __name__ == '__main__':
     if not os.path.exists(out_dir):
         os.makedirs(out_dir)
 
-    run_biofilm_sim(100, out_dir)
+    run_biofilm_sim(20, out_dir)
