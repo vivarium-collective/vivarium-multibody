@@ -53,7 +53,7 @@ def main(surface_anchor_world=None):
     tip = pymunk.Body(tip_mass, tip_moment)
     attach_x = -80
     attach_y = cell_shape.radius
-    rest_len = 30
+    rest_len = 5
 
     tip.position = cell.local_to_world((attach_x, attach_y + rest_len))
     tip_shape = Circle(tip, radius=tip_radius)
@@ -85,7 +85,7 @@ def main(surface_anchor_world=None):
 
     #want to make the pivot but keep it off until its on contact with surface
     anchor = (tip.position.x, top_y)
-    tip_surface = pymunk.constraints.PivotJoint(tip, space.static_body, (0,0),tip.position)
+    tip_surface = pymunk.constraints.PivotJoint(tip, space.static_body, (0,0),anchor)
     tip_surface.collide_bodies = False
     tip_surface.max_force = 0
     tip_surface.max_torque = 0
@@ -98,8 +98,8 @@ def main(surface_anchor_world=None):
     surface_anchor_world = (rod_end_surface.x, top_y)
     #need to add/figure out rest and rest length
 
-    spring = pymunk.DampedSpring(cell, space.static_body, rod_anchor_local, surface_anchor_world, rest_length=1,
-                                 stiffness=0.01, damping=0.1)
+    spring = pymunk.DampedSpring(cell, space.static_body, rod_anchor_local, surface_anchor_world, rest_length=rest_len,
+                                 stiffness=0.1, damping=0.1)
     space.add(spring)
 
 
