@@ -2,9 +2,9 @@
 
 
 
-1) Added pymunk_biofilm.py
-   [pymunk_biofilm](https://github.com/vivarium-collective/vivarium-multibody/blob/biofilm-demo/vivarium_multibody/experiments/pymunk_biofilm.py)
 
+ 1. Added [pymunk_biofilm](https://github.com/vivarium-collective/vivarium-multibody/blob/biofilm-demo/vivarium_multibody/experiments/pymunk_biofilm.py)
+    
 * Experiment using the pymunk engine and architecture of the mother machine. In this project I aim to simulate biofilm growth on a surface using the 2D physics of pymunk and multibody physics.
 
 * Trying to simulate 4 cells growing on a surface and move according to multibody physics
